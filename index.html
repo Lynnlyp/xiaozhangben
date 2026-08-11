@@ -669,10 +669,28 @@
 
     <script src="db.js"></script>
     <script>
-        // ==================== Service Worker 注册 ====================
+        // ==================== Service Worker 注册（带更新检测） ====================
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(function(err) {
+            navigator.serviceWorker.register('sw.js').then(function(reg) {
+                console.log('SW 注册成功:', reg.scope);
+
+                // 检测到新 SW 安装 → 立即刷新页面
+                reg.addEventListener('updatefound', function() {
+                    var newSW = reg.installing;
+                    newSW.addEventListener('statechange', function() {
+                        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('新版本已就绪，刷新页面');
+                            window.location.reload();
+                        }
+                    });
+                });
+            }).catch(function(err) {
                 console.error('SW 注册失败:', err);
+            });
+
+            // 每次页面加载时主动检查 SW 更新
+            navigator.serviceWorker.ready.then(function(reg) {
+                reg.update();
             });
         }
 
