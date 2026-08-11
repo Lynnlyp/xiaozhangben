@@ -1,6 +1,7 @@
 /* 小账本 V0.1 - Service Worker */
+/* 版本: 20260811-1 - 修复缓存更新问题 */
 
-const CACHE_NAME = 'xiaozhangben-v01';
+const CACHE_NAME = 'xiaozhangben-v02';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -28,6 +29,7 @@ self.addEventListener('activate', function(event) {
       return Promise.all(
         cacheNames.map(function(name) {
           if (name !== CACHE_NAME) {
+            console.log('删除旧缓存:', name);
             return caches.delete(name);
           }
         })
@@ -44,39 +46,61 @@ const APP_SCOPE = (function() {
   return url.href;
 })();
 
-// 拦截请求：优先从缓存返回，同时后台更新
+// 拦截请求
 self.addEventListener('fetch', function(event) {
-  if (event.request.url.startsWith(APP_SCOPE)) {
-    event.respondWith(
-      caches.match(event.request).then(function(cachedResponse) {
-        if (cachedResponse) {
-          const fetchPromise = fetch(event.request).then(function(networkResponse) {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then(function(cache) {
-                cache.put(event.request, responseClone);
-              });
-            }
-            return networkResponse;
-          }).catch(function() {
-            return cachedResponse;
-          });
-          return cachedResponse;
-        }
+  if (!event.request.url.startsWith(APP_SCOPE)) {
+    return;
+  }
 
-        return fetch(event.request).then(function(networkResponse) {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
-          }
-          const responseClone = networkResponse.clone();
+  // 对 HTML 页面使用 Network First 策略（在线时优先用最新版）
+  if (event.request.mode === 'navigate' ||
+      event.request.url.endsWith('/') ||
+      event.request.url.endsWith('/index.html')) {
+    event.respondWith(
+      fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var clone = networkResponse.clone();
           caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, responseClone);
+            cache.put(event.request, clone);
           });
-          return networkResponse;
-        }).catch(function() {
-          return caches.match('./index.html');
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match(event.request).then(function(cached) {
+          return cached || caches.match('./index.html');
         });
       })
     );
+    return;
   }
+
+  // 对静态资源（JS/CSS/图片）使用 Cache First 策略
+  event.respondWith(
+    caches.match(event.request).then(function(cachedResponse) {
+      if (cachedResponse) {
+        // 后台更新缓存
+        fetch(event.request).then(function(networkResponse) {
+          if (networkResponse && networkResponse.status === 200) {
+            var clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(event.request, clone);
+            });
+          }
+        }).catch(function() {});
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, clone);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match('./index.html');
+      });
+    })
+  );
 });
