@@ -251,6 +251,60 @@ function getAvailableMonths() {
 // 导出所有数据（用于备份）
 function exportAllData() {
   return getAllRecords().then(function(records) {
-    return JSON.stringify(records, null, 2);
+    var exportObj = {
+      app: '小账本',
+      version: '0.1',
+      exportTime: new Date().toISOString(),
+      recordCount: records.length,
+      records: records
+    };
+    return JSON.stringify(exportObj, null, 2);
+  });
+}
+
+// 批量导入记录（覆盖式导入，先清空再导入）
+function importRecords(jsonStr) {
+  var data;
+  try {
+    data = JSON.parse(jsonStr);
+  } catch(e) {
+    return Promise.reject('JSON 格式错误');
+  }
+
+  var records = data.records || data;
+  if (!Array.isArray(records)) {
+    return Promise.reject('数据格式错误：找不到记录数组');
+  }
+
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+
+      // 先清空所有旧数据
+      var clearRequest = store.clear();
+      clearRequest.onsuccess = function() {
+        // 导入新数据
+        var imported = 0;
+        records.forEach(function(r) {
+          // 确保每个记录有 createdAt
+          if (!r.createdAt) {
+            r.createdAt = Date.now();
+          }
+          store.add(r);
+          imported++;
+        });
+
+        tx.oncomplete = function() {
+          resolve(imported);
+        };
+        tx.onerror = function(event) {
+          reject('导入失败: ' + event.target.error.message);
+        };
+      };
+      clearRequest.onerror = function(event) {
+        reject('清空旧数据失败: ' + event.target.error.message);
+      };
+    });
   });
 }

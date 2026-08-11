@@ -1,7 +1,7 @@
 /* 小账本 V0.1 - Service Worker */
-/* 版本: 20260811-2 - Step 5 分析月份切换 */
+/* 版本: 20260811-3 - Step 6 数据备份/导入 */
 
-const CACHE_NAME = 'xiaozhangben-v03';
+const CACHE_NAME = 'xiaozhangben-v04';
 const PRECACHE_URLS = [
   './',
   './index.html',
