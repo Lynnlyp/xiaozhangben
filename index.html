@@ -667,6 +667,7 @@
         </div>
     </div>
 
+    <script src="db.js"></script>
     <script>
         // ==================== Service Worker 注册 ====================
         if ('serviceWorker' in navigator) {
@@ -676,7 +677,6 @@
         }
 
         // ==================== 页面切换 ====================
-        const pageNames = ['home', 'add', 'list', 'analysis'];
         const headerTitles = {
             home: '首页',
             add: '记一笔',
@@ -690,44 +690,44 @@
         const fabAdd = document.getElementById('fabAdd');
 
         function switchPage(pageId) {
-            // 切换页面
             pages.forEach(function(p) { p.classList.remove('active'); });
             document.getElementById('page-' + pageId).classList.add('active');
 
-            // 切换 tab
             tabItems.forEach(function(t) { t.classList.remove('active'); });
             document.querySelector('.tab-item[data-page="' + pageId + '"]').classList.add('active');
 
-            // 更新标题
             headerTitle.textContent = headerTitles[pageId];
 
-            // 浮动按钮只在首页显示
             if (pageId === 'home') {
                 fabAdd.style.display = 'flex';
+                refreshHome();
+            } else if (pageId === 'list') {
+                refreshList('all');
+            } else if (pageId === 'analysis') {
+                refreshAnalysis();
             } else {
                 fabAdd.style.display = 'none';
             }
         }
 
-        // Tab 点击切换
         tabItems.forEach(function(tab) {
             tab.addEventListener('click', function() {
-                var pageId = this.getAttribute('data-page');
-                switchPage(pageId);
+                switchPage(this.getAttribute('data-page'));
             });
         });
 
-        // 浮动按钮 → 跳转到记一笔
         fabAdd.addEventListener('click', function() {
             switchPage('add');
         });
 
         // ==================== 记一笔：类型切换 ====================
         var typeBtns = document.querySelectorAll('.type-btn');
+        var selectedType = 'expense';
         typeBtns.forEach(function(btn) {
             btn.addEventListener('click', function() {
                 typeBtns.forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
+                selectedType = this.getAttribute('data-type');
             });
         });
 
@@ -743,19 +743,17 @@
 
         // ==================== 记一笔：金额输入聚焦 ====================
         var amountInput = document.getElementById('amountInput');
-        // 点记一笔页面时自动聚焦金额输入
         var pageAdd = document.getElementById('page-add');
         var observer = new MutationObserver(function() {
             if (pageAdd.classList.contains('active')) {
-                setTimeout(function() {
-                    amountInput.focus();
-                }, 300);
+                setTimeout(function() { amountInput.focus(); }, 300);
             }
         });
         observer.observe(pageAdd, { attributes: true, attributeFilter: ['class'] });
 
-        // ==================== 分类点击反馈 ====================
+        // ==================== 分类选择 ====================
         var catBtns = document.querySelectorAll('.category-btn');
+        var selectedCategory = '餐饮';
         catBtns.forEach(function(btn) {
             btn.addEventListener('click', function() {
                 catBtns.forEach(function(b) {
@@ -764,8 +762,14 @@
                 });
                 this.style.borderColor = '#1a73e8';
                 this.style.background = '#f0f4ff';
+                selectedCategory = this.getAttribute('data-category');
             });
         });
+        // 默认选中第一个分类
+        if (catBtns.length > 0) {
+            catBtns[0].style.borderColor = '#1a73e8';
+            catBtns[0].style.background = '#f0f4ff';
+        }
 
         // ==================== 流水筛选切换 ====================
         var filterChips = document.querySelectorAll('.filter-chip');
@@ -773,15 +777,207 @@
             chip.addEventListener('click', function() {
                 filterChips.forEach(function(c) { c.classList.remove('active'); });
                 this.classList.add('active');
+                refreshList(this.getAttribute('data-filter'));
             });
         });
 
-        // ==================== 保存按钮（占位） ====================
+        // ==================== 保存按钮（真实保存到 IndexedDB） ====================
         document.getElementById('saveBtn').addEventListener('click', function() {
-            // Step 2 只是 UI 空壳，不保存数据
-            // 下一阶段才会实现真正的保存
-            alert('记账功能将在 Step 3 实现');
+            var amount = amountInput.value.trim();
+            if (!amount || parseFloat(amount) <= 0) {
+                alert('请输入金额');
+                amountInput.focus();
+                return;
+            }
+
+            var record = {
+                type: selectedType,
+                amount: parseFloat(amount),
+                category: selectedCategory,
+                date: dateInput.value,
+                note: document.getElementById('noteInput').value.trim() || '',
+                createdAt: Date.now()
+            };
+
+            addRecord(record).then(function(id) {
+                // 保存成功：清空表单，回首页
+                amountInput.value = '';
+                document.getElementById('noteInput').value = '';
+                // 重置金额
+                switchPage('home');
+            }).catch(function(err) {
+                alert('保存失败: ' + err);
+            });
         });
+
+        // ==================== 首页刷新 ====================
+        function refreshHome() {
+            // 更新月度统计
+            getMonthSummary().then(function(summary) {
+                document.querySelector('#page-home .summary-cards .summary-card:nth-child(1) .amount').textContent =
+                    '¥' + summary.income.toFixed(2);
+                document.querySelector('#page-home .summary-cards .summary-card:nth-child(2) .amount').textContent =
+                    '¥' + summary.expense.toFixed(2);
+                document.querySelector('#page-home .summary-cards .summary-card:nth-child(3) .amount').textContent =
+                    '¥' + summary.balance.toFixed(2);
+            });
+
+            // 更新最近流水
+            getRecentRecords(5).then(function(records) {
+                var container = document.querySelector('#page-home .recent-title');
+                // 清除旧列表（保留标题）
+                var nextEl = container.nextElementSibling;
+                while (nextEl) {
+                    var toRemove = nextEl;
+                    nextEl = nextEl.nextElementSibling;
+                    if (toRemove.classList.contains('empty-state') || toRemove.classList.contains('recent-list')) {
+                        toRemove.remove();
+                    }
+                }
+
+                if (records.length === 0) {
+                    var empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.innerHTML = '<div class="icon">📭</div><div class="text">还没有记账记录</div>';
+                    container.parentNode.insertBefore(empty, container.nextSibling);
+                    return;
+                }
+
+                var list = document.createElement('div');
+                list.className = 'recent-list';
+                records.forEach(function(r) {
+                    var item = document.createElement('div');
+                    item.className = 'recent-item';
+                    var isExpense = r.type === 'expense';
+                    var icon = isExpense ? getCategoryIcon(r.category) : '💰';
+                    item.innerHTML =
+                        '<div class="recent-item-left">' +
+                            '<div class="recent-icon ' + r.type + '">' + icon + '</div>' +
+                            '<div class="recent-info">' +
+                                '<div class="name">' + (r.category || '其他') + '</div>' +
+                                '<div class="date">' + formatDate(r.date) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="recent-amount ' + r.type + '">' +
+                            (isExpense ? '-' : '+') + '¥' + r.amount.toFixed(2) +
+                        '</div>';
+                    list.appendChild(item);
+                });
+                container.parentNode.insertBefore(list, container.nextSibling);
+            });
+        }
+
+        // ==================== 流水页面刷新 ====================
+        function refreshList(filter) {
+            var container = document.getElementById('page-list');
+            var filterBar = container.querySelector('.filter-bar');
+
+            // 移除旧列表
+            var oldList = container.querySelector('.list-container');
+            if (oldList) oldList.remove();
+            // 移除空状态
+            var oldEmpty = container.querySelector('.empty-state');
+            if (oldEmpty) oldEmpty.remove();
+
+            getRecordsByType(filter).then(function(records) {
+                if (records.length === 0) {
+                    var empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.innerHTML = '<div class="icon">📋</div><div class="text">暂无流水记录</div>';
+                    filterBar.parentNode.insertBefore(empty, filterBar.nextSibling);
+                    return;
+                }
+
+                var list = document.createElement('div');
+                list.className = 'recent-list list-container';
+                records.forEach(function(r) {
+                    var item = document.createElement('div');
+                    item.className = 'recent-item';
+                    var isExpense = r.type === 'expense';
+                    var icon = isExpense ? getCategoryIcon(r.category) : '💰';
+                    var noteText = r.note ? ' · ' + r.note : '';
+                    item.innerHTML =
+                        '<div class="recent-item-left">' +
+                            '<div class="recent-icon ' + r.type + '">' + icon + '</div>' +
+                            '<div class="recent-info">' +
+                                '<div class="name">' + (r.category || '其他') + noteText + '</div>' +
+                                '<div class="date">' + formatDate(r.date) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="recent-amount ' + r.type + '">' +
+                            (isExpense ? '-' : '+') + '¥' + r.amount.toFixed(2) +
+                        '</div>';
+                    list.appendChild(item);
+                });
+                filterBar.parentNode.insertBefore(list, filterBar.nextSibling);
+            });
+        }
+
+        // ==================== 分析页面刷新 ====================
+        function refreshAnalysis() {
+            getMonthSummary().then(function(summary) {
+                document.querySelector('#page-analysis .analysis-summary .analysis-card:nth-child(1) .amount').textContent =
+                    '¥' + summary.income.toFixed(2);
+                document.querySelector('#page-analysis .analysis-summary .analysis-card:nth-child(2) .amount').textContent =
+                    '¥' + summary.expense.toFixed(2);
+                document.querySelector('#page-analysis .analysis-summary .analysis-card:nth-child(3) .amount').textContent =
+                    '¥' + summary.balance.toFixed(2);
+            });
+
+            getCategoryStats().then(function(stats) {
+                var container = document.querySelector('#page-analysis .chart-placeholder');
+                var keys = Object.keys(stats);
+                if (keys.length === 0) {
+                    container.textContent = '暂无数据';
+                    container.style.textAlign = 'center';
+                    container.style.padding = '40px 20px';
+                    return;
+                }
+
+                var total = 0;
+                keys.forEach(function(k) { total += stats[k]; });
+
+                container.innerHTML = '';
+                container.style.textAlign = 'left';
+                container.style.padding = '16px 20px';
+
+                keys.forEach(function(cat) {
+                    var pct = (stats[cat] / total * 100).toFixed(1);
+                    var bar = document.createElement('div');
+                    bar.style.cssText = 'margin-bottom: 12px;';
+                    bar.innerHTML =
+                        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">' +
+                            '<span>' + cat + '</span>' +
+                            '<span>¥' + stats[cat].toFixed(2) + ' (' + pct + '%)</span>' +
+                        '</div>' +
+                        '<div style="height:8px;background:#e8ecf0;border-radius:4px;overflow:hidden;">' +
+                            '<div style="height:100%;width:' + pct + '%;background:#1a73e8;border-radius:4px;transition:width 0.3s;"></div>' +
+                        '</div>';
+                    container.appendChild(bar);
+                });
+            });
+        }
+
+        // ==================== 工具函数 ====================
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            var parts = dateStr.split('-');
+            return parts[0] + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+        }
+
+        function getCategoryIcon(category) {
+            var icons = {
+                '餐饮': '🍽️',
+                '交通': '🚇',
+                '购物': '🛒',
+                '娱乐': '🎮',
+                '居住': '🏠',
+                '医疗': '💊',
+                '教育': '📚',
+                '其他': '📌'
+            };
+            return icons[category] || '📌';
+        }
     </script>
 </body>
 </html>

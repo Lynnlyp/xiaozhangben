@@ -1,0 +1,199 @@
+/* 小账本 V0.1 - IndexedDB 数据层 */
+
+const DB_NAME = 'xiaozhangben';
+const DB_VERSION = 1;
+const STORE_NAME = 'records';
+
+let _db = null;
+
+// 打开数据库
+function openDB() {
+  return new Promise(function(resolve, reject) {
+    if (_db) {
+      resolve(_db);
+      return;
+    }
+
+    var request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = function(event) {
+      var db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        var store = db.createObjectStore(STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true
+        });
+        store.createIndex('date', 'date', { unique: false });
+        store.createIndex('type', 'type', { unique: false });
+        store.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+    };
+
+    request.onsuccess = function(event) {
+      _db = event.target.result;
+      resolve(_db);
+    };
+
+    request.onerror = function(event) {
+      reject('数据库打开失败: ' + event.target.error.message);
+    };
+  });
+}
+
+// 添加一条记录
+function addRecord(record) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+
+      // 补充时间戳
+      record.createdAt = Date.now();
+
+      var request = store.add(record);
+
+      request.onsuccess = function(event) {
+        resolve(event.target.result);
+      };
+
+      request.onerror = function(event) {
+        reject('添加失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 获取所有记录（按时间倒序）
+function getAllRecords() {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readonly');
+      var store = tx.objectStore(STORE_NAME);
+      var index = store.index('createdAt');
+      var request = index.openCursor(null, 'prev');
+
+      var records = [];
+      request.onsuccess = function(event) {
+        var cursor = event.target.result;
+        if (cursor) {
+          records.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(records);
+        }
+      };
+
+      request.onerror = function(event) {
+        reject('查询失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 获取本月记录
+function getMonthRecords() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = String(now.getMonth() + 1).padStart(2, '0');
+  var monthPrefix = y + '-' + m;
+
+  return getAllRecords().then(function(records) {
+    return records.filter(function(r) {
+      return r.date && r.date.startsWith(monthPrefix);
+    });
+  });
+}
+
+// 计算本月收入、支出、结余
+function getMonthSummary() {
+  return getMonthRecords().then(function(records) {
+    var income = 0;
+    var expense = 0;
+    records.forEach(function(r) {
+      if (r.type === 'income') {
+        income += Number(r.amount) || 0;
+      } else {
+        expense += Number(r.amount) || 0;
+      }
+    });
+    return {
+      income: income,
+      expense: expense,
+      balance: income - expense
+    };
+  });
+}
+
+// 按类型筛选记录
+function getRecordsByType(type) {
+  return getAllRecords().then(function(records) {
+    if (type === 'all') return records;
+    return records.filter(function(r) { return r.type === type; });
+  });
+}
+
+// 获取最近 N 条记录
+function getRecentRecords(limit) {
+  return getAllRecords().then(function(records) {
+    return records.slice(0, limit || 10);
+  });
+}
+
+// 支出分类统计（本月）
+function getCategoryStats() {
+  return getMonthRecords().then(function(records) {
+    var stats = {};
+    records.forEach(function(r) {
+      if (r.type === 'expense') {
+        var cat = r.category || '其他';
+        stats[cat] = (stats[cat] || 0) + Number(r.amount);
+      }
+    });
+    return stats;
+  });
+}
+
+// 删除记录
+function deleteRecord(id) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.delete(id);
+
+      request.onsuccess = function() {
+        resolve(true);
+      };
+
+      request.onerror = function(event) {
+        reject('删除失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 更新记录
+function updateRecord(record) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_NAME, 'readwrite');
+      var store = tx.objectStore(STORE_NAME);
+      var request = store.put(record);
+
+      request.onsuccess = function() {
+        resolve(true);
+      };
+
+      request.onerror = function(event) {
+        reject('更新失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 导出所有数据（用于备份）
+function exportAllData() {
+  return getAllRecords().then(function(records) {
+    return JSON.stringify(records, null, 2);
+  });
+}
