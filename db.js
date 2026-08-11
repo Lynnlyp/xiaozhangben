@@ -191,6 +191,63 @@ function updateRecord(record) {
   });
 }
 
+// 获取指定月份的记录
+function getMonthRecordsByMonth(month) {
+  return getAllRecords().then(function(records) {
+    return records.filter(function(r) {
+      return r.date && r.date.startsWith(month);
+    });
+  });
+}
+
+// 获取指定月份的统计
+function getMonthSummaryByMonth(month) {
+  return getMonthRecordsByMonth(month).then(function(records) {
+    var income = 0;
+    var expense = 0;
+    records.forEach(function(r) {
+      if (r.type === 'income') {
+        income += Number(r.amount) || 0;
+      } else {
+        expense += Number(r.amount) || 0;
+      }
+    });
+    return { income: income, expense: expense, balance: income - expense };
+  });
+}
+
+// 获取指定月份的支出分类统计
+function getCategoryStatsByMonth(month) {
+  return getMonthRecordsByMonth(month).then(function(records) {
+    var stats = {};
+    var totalExpense = 0;
+    records.forEach(function(r) {
+      if (r.type === 'expense') {
+        var cat = r.category || '其他';
+        stats[cat] = (stats[cat] || 0) + Number(r.amount);
+        totalExpense += Number(r.amount);
+      }
+    });
+    return { stats: stats, total: totalExpense };
+  });
+}
+
+// 获取所有有数据的月份列表（按时间倒序）
+function getAvailableMonths() {
+  return getAllRecords().then(function(records) {
+    var monthSet = {};
+    records.forEach(function(r) {
+      if (r.date && r.date.length >= 7) {
+        var m = r.date.substring(0, 7);
+        monthSet[m] = true;
+      }
+    });
+    var months = Object.keys(monthSet).sort();
+    months.reverse(); // 最新的月份在前
+    return months;
+  });
+}
+
 // 导出所有数据（用于备份）
 function exportAllData() {
   return getAllRecords().then(function(records) {
