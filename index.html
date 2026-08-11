@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="小账本">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="小账本">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+    <title>小账本 V0.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: linear-gradient(145deg, #f0f4ff 0%, #e8f0fe 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 24px;
+            color: #1a1a2e;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        .logo {
+            width: 88px;
+            height: 88px;
+            background: linear-gradient(135deg, #1a73e8, #4a90d9);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 28px auto;
+            box-shadow: 0 8px 32px rgba(26, 115, 232, 0.3);
+        }
+
+        .logo-icon {
+            font-size: 44px;
+            line-height: 1;
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .app-version {
+            font-size: 15px;
+            color: #666;
+            font-weight: 400;
+            margin-bottom: 12px;
+        }
+
+        .divider {
+            width: 48px;
+            height: 3px;
+            background: linear-gradient(90deg, #1a73e8, #4a90d9);
+            border-radius: 2px;
+            margin: 16px auto;
+        }
+
+        .test-badge {
+            display: inline-block;
+            background: #1a73e8;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 24px;
+            border-radius: 20px;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
+        }
+
+        .status-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 32px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #666;
+        }
+
+        .status-value {
+            font-weight: 500;
+            color: #1a1a2e;
+        }
+
+        .status-value.online {
+            color: #34a853;
+        }
+
+        .status-value.offline {
+            color: #ea4335;
+        }
+
+        .status-value.cached {
+            color: #34a853;
+        }
+
+        .footer {
+            margin-top: 36px;
+            font-size: 13px;
+            color: #999;
+            line-height: 1.6;
+        }
+
+        .footer strong {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <span class="logo-icon">📒</span>
+        </div>
+
+        <h1 class="app-title">小账本</h1>
+        <p class="app-version">V0.1 · 手机独立运行测试</p>
+
+        <div class="divider"></div>
+
+        <div class="test-badge">📱 手机独立运行测试</div>
+
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">网络状态</span>
+                <span class="status-value" id="networkStatus">检测中…</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Service Worker</span>
+                <span class="status-value" id="swStatus">检测中…</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">离线缓存</span>
+                <span class="status-value" id="cacheStatus">检测中…</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">添加到主屏幕</span>
+                <span class="status-value" id="homescreenStatus">检测中…</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            电脑关闭后，手机仍可打开此页面<br>
+            <strong>数据保存在手机本地 → 即将在 Step 2 实现</strong>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 网络状态检测 ====================
+        function updateNetworkStatus() {
+            const el = document.getElementById('networkStatus');
+            if (navigator.onLine) {
+                el.textContent = '在线 ✅';
+                el.className = 'status-value online';
+            } else {
+                el.textContent = '离线 ✅（缓存可用）';
+                el.className = 'status-value offline';
+            }
+        }
+        updateNetworkStatus();
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        // ==================== Service Worker 注册（关键修复） ====================
+        if ('serviceWorker' in navigator) {
+            // 注册 Service Worker
+            navigator.serviceWorker.register('sw.js').then(function(reg) {
+                console.log('✔ SW 注册成功:', reg.scope);
+                document.getElementById('swStatus').textContent = '已注册 ✅';
+                document.getElementById('swStatus').className = 'status-value cached';
+            }).catch(function(err) {
+                console.error('✘ SW 注册失败:', err);
+                document.getElementById('swStatus').textContent = '注册失败 ❌';
+            });
+
+            // 等待 SW 就绪后更新状态
+            navigator.serviceWorker.ready.then(function() {
+                document.getElementById('swStatus').textContent = '已就绪 ✅';
+                document.getElementById('swStatus').className = 'status-value cached';
+            });
+
+            // 检测当前是否已被 SW 控制
+            if (navigator.serviceWorker.controller) {
+                document.getElementById('swStatus').textContent = '受 SW 控制 ✅';
+                document.getElementById('swStatus').className = 'status-value cached';
+            }
+        } else {
+            document.getElementById('swStatus').textContent = '不支持 ❌';
+        }
+
+        // ==================== 离线缓存检测 ====================
+        if ('caches' in window) {
+            caches.open('xiaozhangben-v01').then(function(cache) {
+                cache.keys().then(function(keys) {
+                    const el = document.getElementById('cacheStatus');
+                    if (keys.length > 0) {
+                        el.textContent = '已缓存 ' + keys.length + ' 个文件 ✅';
+                        el.className = 'status-value cached';
+                    } else {
+                        el.textContent = '缓存中…';
+                    }
+                });
+            });
+        } else {
+            document.getElementById('cacheStatus').textContent = '不支持 ❌';
+        }
+
+        // ==================== 添加到主屏幕检测 ====================
+        if (window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true) {
+            document.getElementById('homescreenStatus').textContent = '已从主屏幕打开 ✅';
+            document.getElementById('homescreenStatus').className = 'status-value cached';
+        } else {
+            document.getElementById('homescreenStatus').textContent = '可添加到主屏幕 📲';
+        }
+    </script>
+</body>
+</html>
