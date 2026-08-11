@@ -15,7 +15,6 @@ self.addEventListener('install', function(event) {
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(PRECACHE_URLS);
     }).then(function() {
-      // 跳过等待，立即激活
       return self.skipWaiting();
     })
   );
@@ -33,26 +32,23 @@ self.addEventListener('activate', function(event) {
         })
       );
     }).then(function() {
-      // 立即接管所有客户端
       return self.clients.claim();
     })
   );
 });
 
-// 动态计算当前 Service Worker 所在目录作为应用范围
+// 动态计算当前 SW 所在目录作为应用范围
 const APP_SCOPE = (function() {
   const url = new URL('./', self.location.href);
   return url.href;
 })();
 
-// 拦截请求：优先从缓存返回，同时后台��新
+// 拦截请求：优先从缓存返回，同时后台更新
 self.addEventListener('fetch', function(event) {
-  // 只处理属于本应用范围的请求
   if (event.request.url.startsWith(APP_SCOPE)) {
     event.respondWith(
       caches.match(event.request).then(function(cachedResponse) {
         if (cachedResponse) {
-          // 有缓存：先返回缓存，同时后台更新
           const fetchPromise = fetch(event.request).then(function(networkResponse) {
             if (networkResponse && networkResponse.status === 200) {
               const responseClone = networkResponse.clone();
@@ -62,13 +58,11 @@ self.addEventListener('fetch', function(event) {
             }
             return networkResponse;
           }).catch(function() {
-            // 网络失败，返回缓存
             return cachedResponse;
           });
           return cachedResponse;
         }
 
-        // 无缓存：从网络获取并缓存
         return fetch(event.request).then(function(networkResponse) {
           if (!networkResponse || networkResponse.status !== 200) {
             return networkResponse;
@@ -79,7 +73,6 @@ self.addEventListener('fetch', function(event) {
           });
           return networkResponse;
         }).catch(function() {
-          // 离线且无缓存，返回离线页面
           return caches.match('./index.html');
         });
       })

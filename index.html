@@ -13,8 +13,9 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
-    <title>小账本 V0.1</title>
+    <title>小账本</title>
     <style>
+        /* ========== Reset & Base ========== */
         * {
             margin: 0;
             padding: 0;
@@ -28,239 +29,759 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             -webkit-font-smoothing: antialiased;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: #f5f7fa;
+            color: #1a1a2e;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
-            background: linear-gradient(145deg, #f0f4ff 0%, #e8f0fe 100%);
+        /* ========== App Shell ========== */
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            max-width: 480px;
+            margin: 0 auto;
+            background: #f5f7fa;
+            position: relative;
+        }
+
+        /* ========== Header ========== */
+        .app-header {
+            flex-shrink: 0;
+            padding: 12px 16px 10px;
+            background: #fff;
+            border-bottom: 1px solid #e8ecf0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: max(12px, env(safe-area-inset-top));
+        }
+
+        .app-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .app-header-subtitle {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* ========== Page Container ========== */
+        .page-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+        }
+
+        .page {
+            display: none;
+            padding: 0 16px 16px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* ========== Bottom Tab Bar ========== */
+        .tab-bar {
+            flex-shrink: 0;
+            display: flex;
+            background: #fff;
+            border-top: 1px solid #e8ecf0;
+            padding-bottom: max(0px, env(safe-area-inset-bottom));
+            height: 64px;
+            height: calc(64px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .tab-item {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding: 24px;
-            color: #1a1a2e;
+            gap: 2px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            padding: 6px 0;
+            color: #999;
+            transition: color 0.15s;
         }
 
-        .container {
-            text-align: center;
-            max-width: 360px;
-            width: 100%;
+        .tab-item:active {
+            opacity: 0.6;
         }
 
-        .logo {
-            width: 88px;
-            height: 88px;
-            background: linear-gradient(135deg, #1a73e8, #4a90d9);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 28px auto;
-            box-shadow: 0 8px 32px rgba(26, 115, 232, 0.3);
+        .tab-item.active {
+            color: #1a73e8;
         }
 
-        .logo-icon {
-            font-size: 44px;
+        .tab-icon {
+            font-size: 22px;
             line-height: 1;
         }
 
-        .app-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1a1a2e;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        .app-version {
-            font-size: 15px;
-            color: #666;
-            font-weight: 400;
-            margin-bottom: 12px;
-        }
-
-        .divider {
-            width: 48px;
-            height: 3px;
-            background: linear-gradient(90deg, #1a73e8, #4a90d9);
-            border-radius: 2px;
-            margin: 16px auto;
-        }
-
-        .test-badge {
-            display: inline-block;
-            background: #1a73e8;
-            color: #fff;
-            font-size: 14px;
+        .tab-label {
+            font-size: 10px;
             font-weight: 500;
-            padding: 10px 24px;
-            border-radius: 20px;
-            margin-top: 8px;
-            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
         }
 
-        .status-card {
+        /* ========== Page: 首页 ========== */
+        .summary-cards {
+            display: flex;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .summary-card {
+            flex: 1;
             background: #fff;
-            border-radius: 16px;
-            padding: 20px 24px;
-            margin-top: 32px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border-radius: 14px;
+            padding: 16px 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            text-align: center;
         }
 
-        .status-item {
+        .summary-card .label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .summary-card .amount {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .summary-card .amount.income {
+            color: #e74c3c;
+        }
+
+        .summary-card .amount.expense {
+            color: #27ae60;
+        }
+
+        .summary-card .amount.balance {
+            color: #1a73e8;
+        }
+
+        .recent-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 20px 0 10px;
+            color: #1a1a2e;
+        }
+
+        .recent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .recent-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .recent-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .recent-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .recent-icon.expense {
+            background: #e8f5e9;
+        }
+
+        .recent-icon.income {
+            background: #fce4ec;
+        }
+
+        .recent-info .name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .recent-info .date {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .recent-amount {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .recent-amount.expense {
+            color: #27ae60;
+        }
+
+        .recent-amount.income {
+            color: #e74c3c;
+        }
+
+        .placeholder-text {
+            text-align: center;
+            color: #ccc;
+            padding: 32px 0;
             font-size: 14px;
         }
 
-        .status-item:last-child {
-            border-bottom: none;
+        /* ========== Page: 记一笔 ========== */
+        .add-form {
+            margin-top: 16px;
         }
 
-        .status-label {
-            color: #666;
+        .type-toggle {
+            display: flex;
+            background: #e8ecf0;
+            border-radius: 10px;
+            padding: 3px;
+            margin-bottom: 20px;
         }
 
-        .status-value {
+        .type-btn {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: none;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: 500;
-            color: #1a1a2e;
-        }
-
-        .status-value.online {
-            color: #34a853;
-        }
-
-        .status-value.offline {
-            color: #ea4335;
-        }
-
-        .status-value.cached {
-            color: #34a853;
-        }
-
-        .footer {
-            margin-top: 36px;
-            font-size: 13px;
-            color: #999;
-            line-height: 1.6;
-        }
-
-        .footer strong {
             color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .type-btn.active {
+            background: #fff;
+            color: #1a1a2e;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .type-btn.expense.active {
+            color: #27ae60;
+        }
+
+        .type-btn.income.active {
+            color: #e74c3c;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #e8ecf0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            background: #fff;
+            color: #1a1a2e;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .form-input:focus {
+            border-color: #1a73e8;
+        }
+
+        .form-input.amount-input {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            padding: 18px 16px;
+            letter-spacing: 1px;
+        }
+
+        .form-input.amount-input::placeholder {
+            font-size: 20px;
+            font-weight: 400;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .category-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 4px;
+            border: 1px solid #e8ecf0;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 11px;
+            color: #666;
+            font-family: inherit;
+        }
+
+        .category-btn:active {
+            background: #f0f4ff;
+            border-color: #1a73e8;
+        }
+
+        .category-btn .cat-icon {
+            font-size: 22px;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: #1a73e8;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            font-family: inherit;
+            transition: opacity 0.15s;
+        }
+
+        .save-btn:active {
+            opacity: 0.8;
+        }
+
+        /* ========== Page: 流水 ========== */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin: 16px 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #e8ecf0;
+            background: #fff;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+
+        .filter-chip.active {
+            background: #1a73e8;
+            color: #fff;
+            border-color: #1a73e8;
+        }
+
+        .filter-chip:active {
+            opacity: 0.7;
+        }
+
+        /* ========== Page: 分析 ========== */
+        .analysis-summary {
+            display: flex;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .analysis-card {
+            flex: 1;
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            text-align: center;
+        }
+
+        .analysis-card .label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .analysis-card .amount {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .analysis-card .amount.income {
+            color: #e74c3c;
+        }
+
+        .analysis-card .amount.expense {
+            color: #27ae60;
+        }
+
+        .analysis-card .amount.balance {
+            color: #1a73e8;
+        }
+
+        .chart-placeholder {
+            background: #fff;
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            color: #ccc;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        /* ========== 记一笔 浮动按钮 ========== */
+        .fab-add {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s, opacity 0.15s;
+            z-index: 10;
+        }
+
+        .fab-add:active {
+            transform: scale(0.92);
+        }
+
+        /* ========== 空状态占位 ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: #ccc;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state .text {
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">
-            <span class="logo-icon">📒</span>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <span class="app-header-title" id="headerTitle">首页</span>
+            <span class="app-header-subtitle">小账本 V0.1</span>
+        </header>
+
+        <!-- Page Container -->
+        <div class="page-container" id="pageContainer">
+
+            <!-- ========== 首页 ========== -->
+            <div class="page active" id="page-home">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="label">本月收入</div>
+                        <div class="amount income">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">本月支出</div>
+                        <div class="amount expense">¥0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">本月结余</div>
+                        <div class="amount balance">¥0</div>
+                    </div>
+                </div>
+
+                <div class="recent-title">最近流水</div>
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <div class="text">还没有记账记录</div>
+                </div>
+            </div>
+
+            <!-- ========== 记一笔 ========== -->
+            <div class="page" id="page-add">
+                <div class="add-form">
+                    <div class="type-toggle">
+                        <button class="type-btn expense active" data-type="expense">支出</button>
+                        <button class="type-btn income" data-type="income">收入</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>金额</label>
+                        <input class="form-input amount-input" type="number" inputmode="decimal" pattern="[0-9]*" placeholder="0.00" id="amountInput">
+                    </div>
+
+                    <div class="form-group">
+                        <label>分类</label>
+                        <div class="category-grid" id="categoryGrid">
+                            <button class="category-btn" data-category="餐饮">
+                                <span class="cat-icon">🍽️</span>餐饮
+                            </button>
+                            <button class="category-btn" data-category="交通">
+                                <span class="cat-icon">🚇</span>交通
+                            </button>
+                            <button class="category-btn" data-category="购物">
+                                <span class="cat-icon">🛒</span>购物
+                            </button>
+                            <button class="category-btn" data-category="娱乐">
+                                <span class="cat-icon">🎮</span>娱乐
+                            </button>
+                            <button class="category-btn" data-category="居住">
+                                <span class="cat-icon">🏠</span>居住
+                            </button>
+                            <button class="category-btn" data-category="医疗">
+                                <span class="cat-icon">💊</span>医疗
+                            </button>
+                            <button class="category-btn" data-category="教育">
+                                <span class="cat-icon">📚</span>教育
+                            </button>
+                            <button class="category-btn" data-category="其他">
+                                <span class="cat-icon">📌</span>其他
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input class="form-input" type="date" id="dateInput">
+                    </div>
+
+                    <div class="form-group">
+                        <label>备注</label>
+                        <input class="form-input" type="text" placeholder="可选" id="noteInput" maxlength="50">
+                    </div>
+
+                    <button class="save-btn" id="saveBtn">保存</button>
+                </div>
+            </div>
+
+            <!-- ========== 流水 ========== -->
+            <div class="page" id="page-list">
+                <div class="filter-bar">
+                    <button class="filter-chip active" data-filter="all">全部</button>
+                    <button class="filter-chip" data-filter="expense">支出</button>
+                    <button class="filter-chip" data-filter="income">收入</button>
+                </div>
+
+                <div class="empty-state">
+                    <div class="icon">📋</div>
+                    <div class="text">暂无流水记录</div>
+                </div>
+            </div>
+
+            <!-- ========== 分析 ========== -->
+            <div class="page" id="page-analysis">
+                <div class="analysis-summary">
+                    <div class="analysis-card">
+                        <div class="label">收入</div>
+                        <div class="amount income">¥0</div>
+                    </div>
+                    <div class="analysis-card">
+                        <div class="label">支出</div>
+                        <div class="amount expense">¥0</div>
+                    </div>
+                    <div class="analysis-card">
+                        <div class="label">结余</div>
+                        <div class="amount balance">¥0</div>
+                    </div>
+                </div>
+
+                <div class="recent-title">支出分类统计</div>
+                <div class="chart-placeholder">
+                    暂无数据
+                </div>
+            </div>
         </div>
 
-        <h1 class="app-title">小账本</h1>
-        <p class="app-version">V0.1 · 手机独立运行测试</p>
+        <!-- 浮动记一笔按钮（首页专用） -->
+        <button class="fab-add" id="fabAdd">＋</button>
 
-        <div class="divider"></div>
-
-        <div class="test-badge">📱 手机独立运行测试</div>
-
-        <div class="status-card">
-            <div class="status-item">
-                <span class="status-label">网络状态</span>
-                <span class="status-value" id="networkStatus">检测中…</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Service Worker</span>
-                <span class="status-value" id="swStatus">检测中…</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">离线缓存</span>
-                <span class="status-value" id="cacheStatus">检测中…</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">添加到主屏幕</span>
-                <span class="status-value" id="homescreenStatus">检测中…</span>
-            </div>
-        </div>
-
-        <div class="footer">
-            电脑关闭后，手机仍可打开此页面<br>
-            <strong>数据保存在手机本地 → 即将在 Step 2 实现</strong>
+        <!-- Bottom Tab Bar -->
+        <div class="tab-bar">
+            <button class="tab-item active" data-page="home">
+                <span class="tab-icon">🏠</span>
+                <span class="tab-label">首页</span>
+            </button>
+            <button class="tab-item" data-page="add">
+                <span class="tab-icon">✏️</span>
+                <span class="tab-label">记一笔</span>
+            </button>
+            <button class="tab-item" data-page="list">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">流水</span>
+            </button>
+            <button class="tab-item" data-page="analysis">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">分析</span>
+            </button>
         </div>
     </div>
 
     <script>
-        // ==================== 网络状态检测 ====================
-        function updateNetworkStatus() {
-            const el = document.getElementById('networkStatus');
-            if (navigator.onLine) {
-                el.textContent = '在线 ✅';
-                el.className = 'status-value online';
-            } else {
-                el.textContent = '离线 ✅（缓存可用）';
-                el.className = 'status-value offline';
-            }
-        }
-        updateNetworkStatus();
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-
-        // ==================== Service Worker 注册（关键修复） ====================
+        // ==================== Service Worker 注册 ====================
         if ('serviceWorker' in navigator) {
-            // 注册 Service Worker
-            navigator.serviceWorker.register('sw.js').then(function(reg) {
-                console.log('✔ SW 注册成功:', reg.scope);
-                document.getElementById('swStatus').textContent = '已注册 ✅';
-                document.getElementById('swStatus').className = 'status-value cached';
-            }).catch(function(err) {
-                console.error('✘ SW 注册失败:', err);
-                document.getElementById('swStatus').textContent = '注册失败 ❌';
+            navigator.serviceWorker.register('sw.js').catch(function(err) {
+                console.error('SW 注册失败:', err);
             });
+        }
 
-            // 等待 SW 就绪后更新状态
-            navigator.serviceWorker.ready.then(function() {
-                document.getElementById('swStatus').textContent = '已就绪 ✅';
-                document.getElementById('swStatus').className = 'status-value cached';
-            });
+        // ==================== 页面切换 ====================
+        const pageNames = ['home', 'add', 'list', 'analysis'];
+        const headerTitles = {
+            home: '首页',
+            add: '记一笔',
+            list: '流水',
+            analysis: '分析'
+        };
 
-            // 检测当前是否已被 SW 控制
-            if (navigator.serviceWorker.controller) {
-                document.getElementById('swStatus').textContent = '受 SW 控制 ✅';
-                document.getElementById('swStatus').className = 'status-value cached';
+        const tabItems = document.querySelectorAll('.tab-item');
+        const pages = document.querySelectorAll('.page');
+        const headerTitle = document.getElementById('headerTitle');
+        const fabAdd = document.getElementById('fabAdd');
+
+        function switchPage(pageId) {
+            // 切换页面
+            pages.forEach(function(p) { p.classList.remove('active'); });
+            document.getElementById('page-' + pageId).classList.add('active');
+
+            // 切换 tab
+            tabItems.forEach(function(t) { t.classList.remove('active'); });
+            document.querySelector('.tab-item[data-page="' + pageId + '"]').classList.add('active');
+
+            // 更新标题
+            headerTitle.textContent = headerTitles[pageId];
+
+            // 浮动按钮只在首页显示
+            if (pageId === 'home') {
+                fabAdd.style.display = 'flex';
+            } else {
+                fabAdd.style.display = 'none';
             }
-        } else {
-            document.getElementById('swStatus').textContent = '不支持 ❌';
         }
 
-        // ==================== 离线缓存检测 ====================
-        if ('caches' in window) {
-            caches.open('xiaozhangben-v01').then(function(cache) {
-                cache.keys().then(function(keys) {
-                    const el = document.getElementById('cacheStatus');
-                    if (keys.length > 0) {
-                        el.textContent = '已缓存 ' + keys.length + ' 个文件 ✅';
-                        el.className = 'status-value cached';
-                    } else {
-                        el.textContent = '缓存中…';
-                    }
-                });
+        // Tab 点击切换
+        tabItems.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                var pageId = this.getAttribute('data-page');
+                switchPage(pageId);
             });
-        } else {
-            document.getElementById('cacheStatus').textContent = '不支持 ❌';
+        });
+
+        // 浮动按钮 → 跳转到记一笔
+        fabAdd.addEventListener('click', function() {
+            switchPage('add');
+        });
+
+        // ==================== 记一笔：类型切换 ====================
+        var typeBtns = document.querySelectorAll('.type-btn');
+        typeBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                typeBtns.forEach(function(b) { b.classList.remove('active'); });
+                this.classList.add('active');
+            });
+        });
+
+        // ==================== 记一笔：默认日期 ====================
+        var dateInput = document.getElementById('dateInput');
+        if (dateInput) {
+            var today = new Date();
+            var y = today.getFullYear();
+            var m = String(today.getMonth() + 1).padStart(2, '0');
+            var d = String(today.getDate()).padStart(2, '0');
+            dateInput.value = y + '-' + m + '-' + d;
         }
 
-        // ==================== 添加到主屏幕检测 ====================
-        if (window.matchMedia('(display-mode: standalone)').matches ||
-            window.navigator.standalone === true) {
-            document.getElementById('homescreenStatus').textContent = '已从主屏幕打开 ✅';
-            document.getElementById('homescreenStatus').className = 'status-value cached';
-        } else {
-            document.getElementById('homescreenStatus').textContent = '可添加到主屏幕 📲';
-        }
+        // ==================== 记一笔：金额输入聚焦 ====================
+        var amountInput = document.getElementById('amountInput');
+        // 点记一笔页面时自动聚焦金额输入
+        var pageAdd = document.getElementById('page-add');
+        var observer = new MutationObserver(function() {
+            if (pageAdd.classList.contains('active')) {
+                setTimeout(function() {
+                    amountInput.focus();
+                }, 300);
+            }
+        });
+        observer.observe(pageAdd, { attributes: true, attributeFilter: ['class'] });
+
+        // ==================== 分类点击反馈 ====================
+        var catBtns = document.querySelectorAll('.category-btn');
+        catBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                catBtns.forEach(function(b) {
+                    b.style.borderColor = '#e8ecf0';
+                    b.style.background = '#fff';
+                });
+                this.style.borderColor = '#1a73e8';
+                this.style.background = '#f0f4ff';
+            });
+        });
+
+        // ==================== 流水筛选切换 ====================
+        var filterChips = document.querySelectorAll('.filter-chip');
+        filterChips.forEach(function(chip) {
+            chip.addEventListener('click', function() {
+                filterChips.forEach(function(c) { c.classList.remove('active'); });
+                this.classList.add('active');
+            });
+        });
+
+        // ==================== 保存按钮（占位） ====================
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            // Step 2 只是 UI 空壳，不保存数据
+            // 下一阶段才会实现真正的保存
+            alert('记账功能将在 Step 3 实现');
+        });
     </script>
 </body>
 </html>
