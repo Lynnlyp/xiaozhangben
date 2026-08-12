@@ -1,14 +1,19 @@
-/* 小账本 V0.1 - Service Worker */
-/* 版本: 20260811-3 - Step 6 数据备份/导入 */
+/* 小账本 V0.2 - Service Worker */
+/* 版本: 20260812-1 - Step 2 首页翻新 */
 
-const CACHE_NAME = 'xiaozhangben-v04';
+const CACHE_NAME = 'xiaozhangben-v05';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
   './db.js',
   './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icons/icon-512.png',
+  './icons/vase.png',
+  './icons/owner_self.png',
+  './icons/owner_family.png',
+  './icons/owner_son.png',
+  './icons/owner_studio.png'
 ];
 
 // 安装：预缓存核心文件
