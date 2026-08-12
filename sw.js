@@ -1,7 +1,7 @@
 /* 小账本 V0.2 - Service Worker */
 /* 版本: 20260812-1 - Step 2 首页翻新 */
 
-const CACHE_NAME = 'xiaozhangben-v05';
+const CACHE_NAME = 'xiaozhangben-v06';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -9,11 +9,16 @@ const PRECACHE_URLS = [
   './db.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/vase.png',
-  './icons/owner_self.png',
-  './icons/owner_family.png',
-  './icons/owner_son.png',
-  './icons/owner_studio.png'
+  './assets/vase.png',
+  './assets/owner-self.png',
+  './assets/owner-family.png',
+  './assets/owner-son.png',
+  './assets/owner-studio.png',
+  './assets/nav-home.png',
+  './assets/nav-flow.png',
+  './assets/nav-add.png',
+  './assets/nav-look.png',
+  './assets/nav-debt.png'
 ];
 
 // 安装：预缓存核心文件
