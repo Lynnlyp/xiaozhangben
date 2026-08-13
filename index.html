@@ -127,6 +127,7 @@
         .debt-card-meta { font-size: 12px; color: #8e8e93; margin-bottom: 8px; }
         .debt-card-actions { display: flex; gap: 8px; }
         .debt-card-btn { flex: 1; padding: 6px; font-size: 12px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; text-align: center; cursor: pointer; }
+        .debt-card-btn.pay { color: #27ae60; border-color: #27ae60; }
         .debt-card-btn.settle { color: #5b8def; border-color: #5b8def; }
         .debt-card-btn.edit { color: #8e8e93; }
         .debt-card-btn.delete { color: #e74c3c; border-color: #e74c3c; }
@@ -736,6 +737,34 @@
                 <div class="modal-actions">
                     <button class="cancel-btn" onclick="closeDebtModal()">取消</button>
                     <button class="confirm-btn" id="debtSaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 还款弹窗 ========== -->
+        <div class="modal-overlay" id="repayModalOverlay"></div>
+        <div class="modal-content" id="repayModal" style="border-radius:16px;">
+            <div class="modal-title">记录还款</div>
+            <div class="add-form" style="padding:0;">
+                <div class="form-row">
+                    <label>责任名称</label>
+                    <div style="font-size:15px;font-weight:600;color:#1a1a2e;padding:4px 0;" id="repayDebtName"></div>
+                </div>
+                <div class="form-row">
+                    <label>还款金额</label>
+                    <input type="number" id="repayAmount" inputmode="decimal" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>还款日期</label>
+                    <input type="date" id="repayDate">
+                </div>
+                <div class="form-row">
+                    <label>备注</label>
+                    <input type="text" id="repayNote" placeholder="可选">
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeRepayModal()">取消</button>
+                    <button class="confirm-btn" id="repaySaveBtn">确认还款</button>
                 </div>
             </div>
         </div>
@@ -1415,7 +1444,8 @@
                                 (ends ? ' · ' + ends : '') +
                             '</div>' +
                             '<div class="debt-card-actions">' +
-                                '<button class="debt-card-btn settle" onclick="openSettleDebt(' + d.id + ')">标记结清</button>' +
+                                '<button class="debt-card-btn pay" onclick="openRepaymentModal(' + d.id + ')">记录还款</button>' +
+                                '<button class="debt-card-btn settle" onclick="openSettleDebt(' + d.id + ')">结清</button>' +
                                 '<button class="debt-card-btn edit" onclick="openEditDebt(' + d.id + ')">编辑</button>' +
                                 '<button class="debt-card-btn delete" onclick="openDeleteDebt(' + d.id + ')">删除</button>' +
                             '</div>' +
@@ -1568,6 +1598,74 @@
                 alert('操作失败: ' + err);
             });
         }
+
+        // ==================== 还款功能 ====================
+        var repayDebtId = null;
+
+        function openRepaymentModal(debtId) {
+            repayDebtId = debtId;
+            // 获取债务数据
+            getAllDebts().then(function(debts) {
+                var debt = null;
+                for (var i = 0; i < debts.length; i++) {
+                    if (debts[i].id === debtId) { debt = debts[i]; break; }
+                }
+                if (!debt) return;
+                document.getElementById('repayDebtName').textContent = debt.name || '';
+                document.getElementById('repayAmount').value = debt.installmentAmount || '';
+                // 默认日期今天
+                var now = new Date();
+                var y = now.getFullYear();
+                var m = String(now.getMonth() + 1).padStart(2, '0');
+                var d = String(now.getDate()).padStart(2, '0');
+                document.getElementById('repayDate').value = y + '-' + m + '-' + d;
+                document.getElementById('repayNote').value = '';
+                document.getElementById('repayModal').classList.add('active');
+                document.getElementById('repayModalOverlay').classList.add('active');
+            });
+        }
+
+        function closeRepayModal() {
+            document.getElementById('repayModal').classList.remove('active');
+            document.getElementById('repayModalOverlay').classList.remove('active');
+            repayDebtId = null;
+        }
+
+        document.getElementById('repayModalOverlay').addEventListener('click', closeRepayModal);
+
+        document.getElementById('repaySaveBtn').addEventListener('click', function() {
+            if (!repayDebtId) return;
+            var amount = parseFloat(document.getElementById('repayAmount').value);
+            if (!amount || amount <= 0) { alert('请输入还款金额'); return; }
+            var date = document.getElementById('repayDate').value || '';
+            var note = document.getElementById('repayNote').value || '';
+
+            // 获取债务信息以继承 owner
+            getAllDebts().then(function(debts) {
+                var debt = null;
+                for (var i = 0; i < debts.length; i++) {
+                    if (debts[i].id === repayDebtId) { debt = debts[i]; break; }
+                }
+                if (!debt) { alert('未找到债务'); return; }
+
+                var repayment = {
+                    debtId: repayDebtId,
+                    amount: amount,
+                    date: date,
+                    note: note,
+                    owner: debt.owner || null,
+                    status: 'confirmed'
+                };
+
+                return addRepayment(repayment);
+            }).then(function() {
+                closeRepayModal();
+                refreshDebtPage();
+                refreshHome();
+            }).catch(function(err) {
+                alert('还款失败: ' + err);
+            });
+        });
 
         // 删除责任
         var deletingDebtId = null;
