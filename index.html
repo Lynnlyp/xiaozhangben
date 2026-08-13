@@ -105,9 +105,353 @@
         }
         .owner-item.unclassified .amount { color: #c7c7cc; font-size: 12px; }
 
-        
+        /* 本月责任区域 */
+        .resp-section { margin: 12px 0; padding: 12px 16px; background: #f8f0ff; border-radius: 12px; border: 1px solid #e8d5f5; }
+        .resp-title { font-size: 13px; color: #7b5ea7; margin-bottom: 4px; }
+        .resp-amount { font-size: 20px; font-weight: 600; color: #7b5ea7; margin-bottom: 6px; }
+        .resp-owners { display: flex; gap: 6px; flex-wrap: wrap; }
+        .resp-owner-item { font-size: 11px; color: #7b5ea7; background: #ede0f7; padding: 2px 8px; border-radius: 8px; }
 
-                        <!-- 待还入口 -->
+        /* 责任页面 */
+        .debt-summary { display: flex; gap: 12px; padding: 16px; }
+        .debt-summary-item { flex: 1; background: #f8f0ff; border-radius: 12px; padding: 12px; border: 1px solid #e8d5f5; }
+        .debt-summary-label { font-size: 12px; color: #8e8e93; margin-bottom: 4px; }
+        .debt-summary-amount { font-size: 20px; font-weight: 600; color: #7b5ea7; }
+        .debt-list { padding: 0 16px 80px; }
+        .debt-empty { text-align: center; padding: 40px; color: #c7c7cc; font-size: 13px; }
+        .debt-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #e8ecf0; }
+        .debt-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .debt-card-name { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .debt-card-owner { font-size: 11px; color: #8e8e93; background: #f0f0f5; padding: 2px 8px; border-radius: 6px; }
+        .debt-card-amount { font-size: 22px; font-weight: 700; color: #7b5ea7; margin-bottom: 6px; }
+        .debt-card-meta { font-size: 12px; color: #8e8e93; margin-bottom: 8px; }
+        .debt-card-actions { display: flex; gap: 8px; }
+        .debt-card-btn { flex: 1; padding: 6px; font-size: 12px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; text-align: center; cursor: pointer; }
+        .debt-card-btn.settle { color: #5b8def; border-color: #5b8def; }
+        .debt-card-btn.edit { color: #8e8e93; }
+        .debt-card-btn.delete { color: #e74c3c; border-color: #e74c3c; }
+        .debt-fab {
+            position: absolute; bottom: 80px; right: 20px; width: 52px; height: 52px;
+            border-radius: 50%; background: #5b8def; color: #fff; font-size: 28px; font-weight: 300;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(91,141,239,0.3); cursor: pointer; z-index: 10;
+        }
+        .debt-type-btn { flex: 1; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; color: #1a1a2e; cursor: pointer; }
+        .debt-type-btn.active { border-color: #7b5ea7; background: #f8f0ff; color: #7b5ea7; }
+        .debt-owner-btn { flex: 1; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; color: #1a1a2e; cursor: pointer; }
+        .debt-owner-btn.active { border-color: #5b8def; background: #f0f4ff; color: #5b8def; }
+
+        .debt-card.settled { opacity: 0.5; }
+        .debt-card.settled .debt-card-amount { color: #8e8e93; }
+        .debt-entry {
+            background: #fff; border-radius: 12px; padding: 14px 16px;
+            margin-bottom: 16px; border: 1px solid #f0f2f4;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .debt-entry-left { flex: 1; }
+        .debt-entry-title {
+            font-size: 14px; font-weight: 500; color: #1a1a2e;
+            margin-bottom: 6px;
+        }
+        .debt-entry-row {
+            display: flex; gap: 16px; align-items: center;
+        }
+        .debt-entry-row .item {
+            font-size: 12px; color: #8e8e93;
+        }
+        .debt-entry-row .item .num {
+            font-size: 14px; font-weight: 600; color: #1a1a2e;
+        }
+        .debt-entry-arrow {
+            font-size: 18px; color: #c7c7cc; padding-left: 8px;
+        }
+
+        /* 最近记下 */
+        .recent-title {
+            font-size: 15px; font-weight: 600; color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+        .recent-list { }
+        .recent-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #f0f2f4;
+        }
+        .recent-item:last-child { border-bottom: none; }
+        .recent-item-left { flex: 1; }
+        .recent-item-category {
+            font-size: 14px; font-weight: 500; color: #1a1a2e;
+        }
+        .recent-item-meta {
+            font-size: 11px; color: #c7c7cc; margin-top: 2px;
+        }
+        .recent-item-amount {
+            font-size: 15px; font-weight: 600; color: #1a1a2e;
+        }
+        .recent-empty {
+            text-align: center; padding: 24px 0; color: #c7c7cc;
+            font-size: 13px;
+        }
+
+        /* ============ 底部导航（V0.2 五栏） ============ */
+        .tab-bar {
+            display: flex; align-items: flex-start;
+            background: #fff; border-top: 1px solid #eef0f2;
+            padding: 0 0 env(safe-area-inset-bottom, 0);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .tab-item {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; padding: 6px 0 4px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            position: relative;
+        }
+        .tab-item .tab-icon {
+            font-size: 20px; line-height: 1; margin-bottom: 2px;
+            color: #c7c7cc;
+        }
+        .tab-item .tab-label {
+            font-size: 10px; color: #c7c7cc; font-weight: 500;
+        }
+        .tab-item.active .tab-icon { color: #5b8def; }
+        .tab-item.active .tab-label { color: #5b8def; }
+
+        /* 中间 + 按钮 */
+        .tab-add-wrap {
+            flex: 0 0 auto; display: flex; justify-content: center;
+            align-items: center; position: relative;
+            width: 60px; margin-top: -12px;
+        }
+        .tab-add {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #5b8def; border: 3px solid #fafbfc;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 300; color: #fff;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(91, 141, 239, 0.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-add:active { transform: scale(0.95); }
+
+        /* ============ 记一笔（V0.2） ============ */
+        .add-header { padding: 16px 16px 8px; display: flex; justify-content: space-between; }
+        .add-header .back-btn { font-size: 16px; color: #5b8def; cursor: pointer; }
+        .add-header .title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
+        .add-header .spacer { width: 40px; }
+        .add-form { padding: 0 16px 16px; }
+        .amount-input-wrap { margin-bottom: 16px; }
+        .amount-input-wrap input {
+            width: 100%; padding: 16px; font-size: 32px; font-weight: 700;
+            border: none; border-bottom: 2px solid #e8ecf0; outline: none;
+            text-align: center; font-family: inherit; background: transparent;
+            border-radius: 0;
+        }
+        .amount-input-wrap input:focus { border-bottom-color: #5b8def; }
+        .amount-input-wrap input::placeholder { color: #d1d1d6; }
+
+        .section-label {
+            font-size: 14px; font-weight: 500; color: #8e8e93;
+            margin-bottom: 10px; margin-top: 4px;
+        }
+
+        /* 算哪边？选择器 */
+        .owner-selector {
+            display: flex; gap: 8px; margin-bottom: 20px;
+        }
+        .owner-option {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            padding: 12px 4px 8px; border-radius: 12px;
+            border: 1.5px solid #e8ecf0; background: #fff;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            transition: all 0.15s;
+        }
+        .owner-option img {
+            width: 40px; height: 40px; object-fit: contain; margin-bottom: 4px;
+        }
+        .owner-option span {
+            font-size: 13px; font-weight: 500; color: #1a1a2e;
+        }
+        .owner-option.selected {
+            border-color: #5b8def; background: #f0f4ff;
+        }
+        .owner-option:active { transform: scale(0.96); }
+
+        /* 花哪儿了？分类 */
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .category-btn {
+            padding: 12px 4px; text-align: center; border: 1.5px solid #e8ecf0;
+            border-radius: 10px; background: #fff; cursor: pointer; font-size: 13px; color: #1a1a2e;
+            -webkit-tap-highlight-color: transparent; transition: all 0.15s;
+        }
+        .cat-icon { width: 32px; height: 32px; object-fit: contain; display: block; margin: 0 auto 4px; }
+        .category-btn.selected { border-color: #5b8def; background: #f0f4ff; }
+        .category-btn:active { transform: scale(0.96); }
+
+        /* 买买复盘标签 */
+        .review-tags {
+            display: none; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .review-tags.visible { display: flex; }
+        .review-tag {
+            flex: 1; min-width: 70px; padding: 8px 4px; text-align: center;
+            border: 1.5px solid #e8ecf0; border-radius: 8px; background: #fff;
+            cursor: pointer; font-size: 12px; color: #8e8e93;
+            -webkit-tap-highlight-color: transparent; transition: all 0.15s;
+        }
+        .review-tag.selected { border-color: #5b8def; background: #f0f4ff; color: #1a1a2e; }
+        .review-tag:active { transform: scale(0.96); }
+        .review-tag-label { font-size: 11px; color: #8e8e93; margin: 0 0 8px; }
+
+        /* 日期 + 加句话（弱化） */
+        .add-meta-row {
+            display: flex; gap: 16px; margin-bottom: 16px;
+            padding: 8px 0; border-top: 1px solid #f0f2f4;
+        }
+        .date-label, .note-label {
+            font-size: 13px; color: #c7c7cc; cursor: pointer;
+            padding: 4px 0;
+        }
+        .date-label:hover, .note-label:hover { color: #5b8def; }
+        .add-meta-hidden { margin-bottom: 12px; }
+        .add-meta-hidden input {
+            width: 100%; padding: 10px 12px; font-size: 15px;
+            border: 1px solid #e8ecf0; border-radius: 8px; outline: none; font-family: inherit;
+        }
+        .add-meta-hidden input:focus { border-color: #5b8def; }
+
+        .save-btn {
+            width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
+            background: #5b8def; color: #fff; border: none; border-radius: 12px;
+            cursor: pointer; margin-top: 4px;
+        }
+        .save-btn:active { opacity: 0.85; }
+        .save-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+        /* ============ 流水页（保留 V0.1 样式，适配新数据） ============ */
+        .list-filters { display: flex; gap: 8px; padding: 12px 16px; }
+        .filter-chip {
+            padding: 6px 14px; border-radius: 16px; font-size: 13px;
+            border: 1px solid #e8ecf0; background: #fff; color: #8e8e93; cursor: pointer;
+        }
+        .filter-chip.active { background: #5b8def; color: #fff; border-color: #5b8def; }
+        .list-items { padding: 0 16px; }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #f0f2f4;
+        }
+        .list-item-left { flex: 1; }
+        .list-item-category { font-size: 14px; font-weight: 500; color: #1a1a2e; }
+        .list-item-meta { font-size: 11px; color: #c7c7cc; margin-top: 2px; }
+        .list-item-amount { font-size: 15px; font-weight: 600; }
+        .list-item-amount.expense { color: #1a1a2e; }
+        .list-item-amount.income { color: #34c759; }
+        .list-item-actions { display: flex; gap: 6px; margin-left: 8px; }
+        .item-btn {
+            padding: 4px 8px; font-size: 12px; border: none; border-radius: 6px;
+            cursor: pointer; background: #f0f2f4; color: #8e8e93;
+        }
+        .item-btn.edit { color: #5b8def; }
+        .item-btn.delete { color: #ff6b6b; }
+
+        /* ============ 分析页（保留 V0.1） ============ */
+        .analysis-summary { display: flex; gap: 8px; padding: 16px; }
+        .analysis-card { flex: 1; background: #fff; border-radius: 12px; padding: 12px; border: 1px solid #f0f2f4; }
+        .analysis-card .label { font-size: 12px; color: #8e8e93; }
+        .analysis-card .amount { font-size: 18px; font-weight: 700; margin-top: 4px; }
+        .analysis-card .amount.income { color: #34c759; }
+        .analysis-card .amount.expense { color: #1a1a2e; }
+        .analysis-card .amount.balance { color: #5b8def; }
+        .month-nav {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; padding: 8px 16px;
+        }
+        .month-nav-btn { font-size: 20px; color: #5b8def; cursor: pointer; padding: 4px; }
+        .month-nav-label { font-size: 15px; font-weight: 600; color: #1a1a2e; min-width: 100px; text-align: center; }
+        .chart-placeholder { padding: 16px; }
+        .data-mgmt { padding: 16px; display: flex; gap: 10px; }
+        .data-mgmt-btn {
+            flex: 1; padding: 10px; font-size: 13px; border: 1px solid #e8ecf0;
+            border-radius: 8px; background: #fff; cursor: pointer; color: #1a1a2e;
+        }
+
+        /* ============ 待还占位页 ============ */
+        .placeholder-page {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 60px 20px; color: #c7c7cc;
+        }
+        .placeholder-page .icon { font-size: 48px; margin-bottom: 12px; }
+        .placeholder-page .text { font-size: 14px; }
+
+        /* ============ 弹窗 ============ */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 100; display: none;
+        }
+        .modal-overlay.active { display: block; }
+        .modal-content {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #fff; border-radius: 16px 16px 0 0;
+            z-index: 101; padding: 20px; max-height: 80vh; overflow-y: auto;
+            display: none; max-width: 480px; margin: 0 auto;
+        }
+        .modal-content.active { display: block; }
+        .modal-title { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 16px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-actions button {
+            flex: 1; padding: 12px; border-radius: 10px; font-size: 15px;
+            border: none; cursor: pointer; font-weight: 500;
+        }
+        .modal-actions .cancel-btn { background: #f0f2f4; color: #8e8e93; }
+        .modal-actions .confirm-btn { background: #5b8def; color: #fff; }
+        .modal-actions .confirm-btn.danger { background: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- ========== 首页（V0.2） ========== -->
+        <div class="page active" id="page-home">
+            <div class="home-header">
+                <span>小账本</span>
+                <span class="month" id="homeMonth">8月</span>
+            </div>
+            <div class="page-content">
+                <!-- 主卡 -->
+                <div class="main-card">
+                    <div class="main-card-left">
+                        <div class="label">这个月花了</div>
+                        <div class="amount" id="homeTotalExpense"><span class="unit">¥</span>0</div>
+                        <div class="sub-label">还能用</div>
+                        <div class="sub-amount" id="homeRemaining">—</div>
+                    </div>
+                    <div class="main-card-right">
+                        <img src="assets/vase.png" alt="花瓶" id="vaseImg">
+                    </div>
+                </div>
+
+                <!-- 四个归属 -->
+                <div class="owner-section" id="ownerSection">
+                    <div class="owner-item" data-owner="self">
+                        <img src="assets/owner-self.png" alt="自己">
+                        <div class="name">自己</div>
+                        <div class="amount">¥0</div>
+                    </div>
+                    <div class="owner-item" data-owner="family">
+                        <img src="assets/owner-family.png" alt="家里">
+                        <div class="name">家里</div>
+                        <div class="amount">¥0</div>
+                    </div>
+                    <div class="owner-item" data-owner="son">
+                        <img src="assets/owner-son.png" alt="儿子">
+                        <div class="name">儿子</div>
+                        <div class="amount">¥0</div>
+                    </div>
+                    <div class="owner-item" data-owner="studio">
+                        <img src="assets/owner-studio.png" alt="工作室">
+                        <div class="name">工作室</div>
+                        <div class="amount">¥0</div>
+                    </div>
+                </div>
+
+                <!-- 待还入口 -->
                 <div class="debt-entry" id="debtEntry">
                     <div class="debt-entry-left">
                         <div class="debt-entry-title">责任提醒</div>
