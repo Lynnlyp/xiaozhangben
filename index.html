@@ -935,8 +935,9 @@
 
         // ==================== 编辑弹窗（V0.2） ====================
         var editingId = null;
+        var editCategoryClicked = false; // 用户是否主动点击了分类
 
-        // 旧分类到新分类的映射（编辑时使用）
+        // 旧分类到新分类的映射（编辑时显示用，不自动改写）
         var LEGACY_CAT_MAP = {
             '交通': 'transport',
             '购物': 'shopping',
@@ -947,6 +948,7 @@
 
         function openEditModal(id) {
             editingId = id;
+            editCategoryClicked = false;
             getAllRecords().then(function(records) {
                 var record = null;
                 for (var i = 0; i < records.length; i++) {
@@ -964,19 +966,18 @@
                     o.classList.toggle('selected', o.getAttribute('data-owner') === record.owner);
                 });
 
-                // 设置分类
+                // 设置分类：仅做显示映射，不标志为已点击
                 var editCats = document.querySelectorAll('#editCategories .category-btn');
                 var targetCat = record.category;
-                // 如果旧分类可以映射到新分类，在编辑时显示对应项
+                // 旧分类可映射到新分类时，高亮对应按钮（仅视觉提示）
                 if (LEGACY_CAT_MAP[targetCat]) {
                     targetCat = LEGACY_CAT_MAP[targetCat];
                 }
-                // 如果已经是新分类 ID，直接匹配
                 editCats.forEach(function(b) {
                     b.classList.toggle('selected', b.getAttribute('data-cat') === targetCat);
                 });
 
-                // 删除旧类型切换按钮（如果存在）
+                // 隐藏旧类型切换按钮
                 var editTypeToggle = document.getElementById('editTypeToggle');
                 if (editTypeToggle) editTypeToggle.style.display = 'none';
 
@@ -1003,13 +1004,14 @@
             });
         });
 
-        // 编辑弹窗：分类选择
+        // 编辑弹窗：分类选择（用户主动点击才标记）
         document.querySelectorAll('#editCategories .category-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('#editCategories .category-btn').forEach(function(b) {
                     b.classList.remove('selected');
                 });
                 this.classList.add('selected');
+                editCategoryClicked = true;  // 用户主动点击了分类
             });
         });
 
@@ -1021,8 +1023,12 @@
             var ownerEl = document.querySelector('#editOwnerSelector .owner-option.selected');
             var owner = ownerEl ? ownerEl.getAttribute('data-owner') : null;
 
-            var catEl = document.querySelector('#editCategories .category-btn.selected');
-            var category = catEl ? catEl.getAttribute('data-cat') : null;
+            // 只在用户主动点击分类后才获取新 category
+            var category = null;
+            if (editCategoryClicked) {
+                var catEl = document.querySelector('#editCategories .category-btn.selected');
+                category = catEl ? catEl.getAttribute('data-cat') : null;
+            }
 
             var date = document.getElementById('editDate').value || '';
             var note = document.getElementById('editNote').value || '';
@@ -1036,9 +1042,10 @@
 
                 original.amount = amount;
                 if (owner) original.owner = owner;
-                if (category) original.category = category;
+                if (category) original.category = category;  // 仅当用户主动点击分类时才改写
                 original.date = date;
                 original.note = note;
+                // 注意：不修改 original.type，收入记录保持收入
 
                 updateRecord(original).then(function() {
                     closeEditModal();
