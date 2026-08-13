@@ -1,7 +1,7 @@
-/* 小账本 V0.2 - Service Worker */
-/* 版本: 20260813-2 - Step 3 分类图标+复盘标签 */
+/* 小账本 V0.3 - Service Worker */
+/* 版本: 20260813-3 - V0.3 责任模块 */
 
-const CACHE_NAME = 'xiaozhangben-v08';
+const CACHE_NAME = 'xiaozhangben-v09';
 const PRECACHE_URLS = [
   './',
   './index.html',

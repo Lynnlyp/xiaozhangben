@@ -105,6 +105,13 @@
         }
         .owner-item.unclassified .amount { color: #c7c7cc; font-size: 12px; }
 
+        /* 本月责任区域 */
+        .resp-section { margin: 12px 0; padding: 12px 16px; background: #f8f0ff; border-radius: 12px; border: 1px solid #e8d5f5; }
+        .resp-title { font-size: 13px; color: #7b5ea7; margin-bottom: 4px; }
+        .resp-amount { font-size: 20px; font-weight: 600; color: #7b5ea7; margin-bottom: 6px; }
+        .resp-owners { display: flex; gap: 6px; flex-wrap: wrap; }
+        .resp-owner-item { font-size: 11px; color: #7b5ea7; background: #ede0f7; padding: 2px 8px; border-radius: 8px; }
+
         /* 待还入口 */
         .debt-entry {
             background: #fff; border-radius: 12px; padding: 14px 16px;
@@ -390,6 +397,13 @@
                     </div>
                 </div>
 
+                <!-- 本月责任 -->
+                <div class="resp-section" id="respSection" style="display:none;">
+                    <div class="resp-title">本月承担</div>
+                    <div class="resp-amount" id="homeTotalResponsibility">¥0</div>
+                    <div class="resp-owners" id="respOwnerList"></div>
+                </div>
+
                 <!-- 四个归属 -->
                 <div class="owner-section" id="ownerSection">
                     <div class="owner-item" data-owner="self">
@@ -417,10 +431,10 @@
                 <!-- 待还入口 -->
                 <div class="debt-entry" id="debtEntry">
                     <div class="debt-entry-left">
-                        <div class="debt-entry-title">还有这些要还</div>
+                        <div class="debt-entry-title">还有这些责任</div>
                         <div class="debt-entry-row">
-                            <span class="item">待还总额 <span class="num" id="debtTotal">¥0</span></span>
-                            <span class="item">本月要还 <span class="num" id="debtMonthly">¥0</span></span>
+                            <span class="item">剩余责任 <span class="num" id="debtTotal">¥0</span></span>
+                            <span class="item">本月承担 <span class="num" id="debtMonthly">¥0</span></span>
                         </div>
                     </div>
                     <div class="debt-entry-arrow">›</div>
@@ -475,6 +489,7 @@
                     <div class="category-btn" data-cat="household"><img class="cat-icon" src="assets/category-household.png" alt="家用">家用</div>
                     <div class="category-btn" data-cat="health"><img class="cat-icon" src="assets/category-health.png" alt="健康">健康</div>
                     <div class="category-btn" data-cat="fun"><img class="cat-icon" src="assets/category-fun.png" alt="玩乐">玩乐</div>
+                    <div class="category-btn" data-cat="responsibility" style="border-color:#d4a5e5;color:#7b5ea7;"><span class="icon" style="font-size:20px;">📋</span>责任</div>
                 </div>
 
                 <!-- 买买复盘标签（选择买买时显示） -->
@@ -547,7 +562,7 @@
         <div class="page" id="page-debts">
             <div class="placeholder-page">
                 <div class="icon">📋</div>
-                <div class="text">待还功能即将上线</div>
+                <div class="text">责任功能即将上线</div>
             </div>
         </div>
 
@@ -569,8 +584,8 @@
                 <span class="tab-label">看看</span>
             </div>
             <div class="tab-item" data-page="debts">
-                <span class="tab-icon"><img src="assets/nav-debt.png" alt="待还" style="width:24px;height:24px;"></span>
-                <span class="tab-label">待还</span>
+                <span class="tab-icon"><img src="assets/nav-debt.png" alt="责任" style="width:24px;height:24px;"></span>
+                <span class="tab-label">责任</span>
             </div>
         </div>
 
@@ -611,6 +626,7 @@
                     <div class="category-btn" data-cat="household"><img class="cat-icon" src="assets/category-household.png" alt="家用">家用</div>
                     <div class="category-btn" data-cat="health"><img class="cat-icon" src="assets/category-health.png" alt="健康">健康</div>
                     <div class="category-btn" data-cat="fun"><img class="cat-icon" src="assets/category-fun.png" alt="玩乐">玩乐</div>
+                    <div class="category-btn" data-cat="responsibility" style="border-color:#d4a5e5;color:#7b5ea7;"><span class="icon" style="font-size:20px;">📋</span>责任</div>
                 </div>
 
                 <div class="form-row">
@@ -891,11 +907,13 @@
             document.getElementById('homeMonth').textContent = now.getMonth() + 1 + '月';
 
             getHomeData().then(function(data) {
+                // 本月消费
                 document.getElementById('homeTotalExpense').innerHTML =
-                    '<span class="unit">¥</span>' + data.totalExpense.toFixed(2);
+                    '<span class="unit">¥</span>' + data.totalConsumption.toFixed(2);
 
                 document.getElementById('homeRemaining').textContent = '—';
 
+                // 消费 owner 统计
                 var ownerStats = data.ownerStats;
                 var ownerItems = document.querySelectorAll('#ownerSection .owner-item');
                 ownerItems.forEach(function(item) {
@@ -915,6 +933,28 @@
                     existingUnclassified.querySelector('.amount').textContent = '¥' + unclassified.toFixed(2);
                 } else if (existingUnclassified) {
                     existingUnclassified.remove();
+                }
+
+                // 本月责任
+                var respSection = document.getElementById('respSection');
+                var respAmount = data.totalResponsibility || 0;
+                if (respAmount > 0) {
+                    respSection.style.display = 'block';
+                    document.getElementById('homeTotalResponsibility').textContent = '¥' + respAmount.toFixed(2);
+                    var respStats = data.respOwnerStats;
+                    var respHtml = '';
+                    var ownerNames = { 'self': '自己', 'family': '家里', 'son': '儿子', 'studio': '工作室' };
+                    ['self', 'family', 'son', 'studio'].forEach(function(o) {
+                        if (respStats[o] > 0) {
+                            respHtml += '<span class="resp-owner-item">' + ownerNames[o] + ' ¥' + respStats[o].toFixed(2) + '</span>';
+                        }
+                    });
+                    if (respStats.unclassified > 0) {
+                        respHtml += '<span class="resp-owner-item">未归类 ¥' + respStats.unclassified.toFixed(2) + '</span>';
+                    }
+                    document.getElementById('respOwnerList').innerHTML = respHtml;
+                } else {
+                    respSection.style.display = 'none';
                 }
 
                 var debtSummary = data.debtSummary;

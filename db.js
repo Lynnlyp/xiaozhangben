@@ -7,7 +7,7 @@ const STORE_DEBTS = 'debts';
 
 let _db = null;
 
-// 新 8 分类映射（内部 ID → 显示名）
+// 新 9 分类映射（内部 ID → 显示名）
 var NEW_CATEGORIES = {
   'necessities_food': '温饱',
   'treat_food':      '贪吃',
@@ -16,7 +16,20 @@ var NEW_CATEGORIES = {
   'learning':        '学习',
   'household':       '家用',
   'health':          '健康',
-  'fun':             '玩乐'
+  'fun':             '玩乐',
+  'responsibility':  '责任'
+};
+
+// 消费分类列表（用于统计「本月花了」）
+var CONSUMPTION_CATEGORIES = {
+  'necessities_food': true,
+  'treat_food': true,
+  'shopping': true,
+  'transport': true,
+  'learning': true,
+  'household': true,
+  'health': true,
+  'fun': true
 };
 
 // 旧分类 → 新分类（明确映射的）
@@ -501,7 +514,7 @@ function importRecords(jsonStr) {
 
 // ==================== 首页统计 ====================
 
-// 获取首页数据（本月支出 + 按 owner 统计 + 待还总额 + 最近流水）
+// 获取首页数据（本月消费 + 本月责任 + 待还总额 + 最近流水）
 function getHomeData() {
   var now = new Date();
   var y = now.getFullYear();
@@ -513,28 +526,47 @@ function getHomeData() {
       return r.date && r.date.startsWith(monthPrefix);
     });
 
-    // 本月总支出
-    var totalExpense = 0;
-    // owner 统计
+    // 本月消费（仅8个消费分类）
+    var totalConsumption = 0;
+    // 本月责任
+    var totalResponsibility = 0;
+    // 消费 owner 统计
     var ownerStats = { 'self': 0, 'family': 0, 'son': 0, 'studio': 0, 'unclassified': 0 };
+    // 责任 owner 统计
+    var respOwnerStats = { 'self': 0, 'family': 0, 'son': 0, 'studio': 0, 'unclassified': 0 };
     // 最近流水（所有月份）
     var recent = records.slice(0, 10);
 
     monthRecords.forEach(function(r) {
       if (r.type === 'expense') {
         var amt = Number(r.amount) || 0;
-        totalExpense += amt;
-        if (r.owner && ownerStats[r.owner] !== undefined) {
-          ownerStats[r.owner] += amt;
+        var cat = r.category;
+
+        if (cat === 'responsibility') {
+          // 责任统计
+          totalResponsibility += amt;
+          if (r.owner && respOwnerStats[r.owner] !== undefined) {
+            respOwnerStats[r.owner] += amt;
+          } else {
+            respOwnerStats.unclassified += amt;
+          }
         } else {
-          ownerStats.unclassified += amt;
+          // 消费统计（含旧/未分类数据）
+          totalConsumption += amt;
+          if (r.owner && ownerStats[r.owner] !== undefined) {
+            ownerStats[r.owner] += amt;
+          } else {
+            ownerStats.unclassified += amt;
+          }
         }
       }
     });
 
     return {
-      totalExpense: totalExpense,
+      totalConsumption: totalConsumption,
       ownerStats: ownerStats,
+      totalResponsibility: totalResponsibility,
+      respOwnerStats: respOwnerStats,
       recentRecords: recent
     };
   }).then(function(homeData) {
