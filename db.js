@@ -68,6 +68,48 @@ function getOwnerDisplay(owner) {
   return '未归类';
 }
 
+// 迁移旧 responsibility 数据到 repayments（首次打开 V0.5 时执行一次）
+function migrateOldResponsibility() {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction([STORE_RECORDS, STORE_REPAYMENTS], 'readwrite');
+      var recordStore = tx.objectStore(STORE_RECORDS);
+      var repayStore = tx.objectStore(STORE_REPAYMENTS);
+      var cursorReq = recordStore.openCursor();
+
+      var migrated = 0;
+      cursorReq.onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (cursor) {
+          var r = cursor.value;
+          if (r.category === 'responsibility') {
+            var repayment = {
+              debtId: null,
+              amount: Number(r.amount) || 0,
+              date: r.date || '',
+              note: r.note || '',
+              owner: r.owner || null,
+              status: 'confirmed',
+              migratedFrom: r.id,
+              createdAt: r.createdAt || Date.now(),
+              updatedAt: r.createdAt || Date.now()
+            };
+            repayStore.add(repayment);
+            migrated++;
+          }
+          cursor.continue();
+        } else {
+          console.log('迁移完成: ' + migrated + ' 条');
+          resolve(migrated);
+        }
+      };
+      cursorReq.onerror = function() {
+        reject('迁移失败');
+      };
+    });
+  });
+}
+
 // 打开数据库
 function openDB() {
   return new Promise(function(resolve, reject) {
@@ -109,7 +151,7 @@ function openDB() {
         }
       }
 
-      // V0.5: 新增 repayments store + 迁移旧 responsibility 数据
+      // V0.5: 新增 repayments store（迁移在首次打开时独立执行）
       if (oldVersion < 3) {
         if (!db.objectStoreNames.contains(STORE_REPAYMENTS)) {
           var repayStore = db.createObjectStore(STORE_REPAYMENTS, {
@@ -121,42 +163,20 @@ function openDB() {
           repayStore.createIndex('createdAt', 'createdAt', { unique: false });
           repayStore.createIndex('status', 'status', { unique: false });
         }
-
-        // 迁移：将 records 中旧 responsibility 记录复制到 repayments
-        if (db.objectStoreNames.contains(STORE_RECORDS)) {
-          var tx = event.target.transaction;
-          var recordStore = tx.objectStore(STORE_RECORDS);
-          var repayStore = tx.objectStore(STORE_REPAYMENTS);
-          var cursorReq = recordStore.openCursor();
-
-          cursorReq.onsuccess = function(e) {
-            var cursor = e.target.result;
-            if (cursor) {
-              var r = cursor.value;
-              if (r.category === 'responsibility') {
-                var repayment = {
-                  debtId: null,
-                  amount: Number(r.amount) || 0,
-                  date: r.date || '',
-                  note: r.note || '',
-                  owner: r.owner || null,
-                  status: 'confirmed',
-                  migratedFrom: r.id,
-                  createdAt: r.createdAt || Date.now(),
-                  updatedAt: r.createdAt || Date.now()
-                };
-                repayStore.add(repayment);
-              }
-              cursor.continue();
-            }
-          };
-        }
       }
     };
 
     request.onsuccess = function(event) {
       _db = event.target.result;
       resolve(_db);
+
+      // 使用 localStorage 标记避免重复迁移（仅首次打开 V0.5 时执行）
+      var migrationKey = 'xiaozhangben_migrated_v3';
+      if (!localStorage.getItem(migrationKey)) {
+        migrateOldResponsibility().then(function() {
+          localStorage.setItem(migrationKey, '1');
+        }).catch(function() {});
+      }
     };
 
     request.onerror = function(event) {
