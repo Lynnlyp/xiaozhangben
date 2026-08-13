@@ -112,7 +112,37 @@
         .resp-owners { display: flex; gap: 6px; flex-wrap: wrap; }
         .resp-owner-item { font-size: 11px; color: #7b5ea7; background: #ede0f7; padding: 2px 8px; border-radius: 8px; }
 
-        /* 待还入口 */
+        /* 责任页面 */
+        .debt-summary { display: flex; gap: 12px; padding: 16px; }
+        .debt-summary-item { flex: 1; background: #f8f0ff; border-radius: 12px; padding: 12px; border: 1px solid #e8d5f5; }
+        .debt-summary-label { font-size: 12px; color: #8e8e93; margin-bottom: 4px; }
+        .debt-summary-amount { font-size: 20px; font-weight: 600; color: #7b5ea7; }
+        .debt-list { padding: 0 16px 80px; }
+        .debt-empty { text-align: center; padding: 40px; color: #c7c7cc; font-size: 13px; }
+        .debt-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #e8ecf0; }
+        .debt-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .debt-card-name { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .debt-card-owner { font-size: 11px; color: #8e8e93; background: #f0f0f5; padding: 2px 8px; border-radius: 6px; }
+        .debt-card-amount { font-size: 22px; font-weight: 700; color: #7b5ea7; margin-bottom: 6px; }
+        .debt-card-meta { font-size: 12px; color: #8e8e93; margin-bottom: 8px; }
+        .debt-card-actions { display: flex; gap: 8px; }
+        .debt-card-btn { flex: 1; padding: 6px; font-size: 12px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; text-align: center; cursor: pointer; }
+        .debt-card-btn.settle { color: #5b8def; border-color: #5b8def; }
+        .debt-card-btn.edit { color: #8e8e93; }
+        .debt-card-btn.delete { color: #e74c3c; border-color: #e74c3c; }
+        .debt-fab {
+            position: absolute; bottom: 80px; right: 20px; width: 52px; height: 52px;
+            border-radius: 50%; background: #5b8def; color: #fff; font-size: 28px; font-weight: 300;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(91,141,239,0.3); cursor: pointer; z-index: 10;
+        }
+        .debt-type-btn { flex: 1; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; color: #1a1a2e; cursor: pointer; }
+        .debt-type-btn.active { border-color: #7b5ea7; background: #f8f0ff; color: #7b5ea7; }
+        .debt-owner-btn { flex: 1; padding: 8px; text-align: center; font-size: 13px; border: 1px solid #e8ecf0; border-radius: 8px; background: #fff; color: #1a1a2e; cursor: pointer; }
+        .debt-owner-btn.active { border-color: #5b8def; background: #f0f4ff; color: #5b8def; }
+
+        .debt-card.settled { opacity: 0.5; }
+        .debt-card.settled .debt-card-amount { color: #8e8e93; }
         .debt-entry {
             background: #fff; border-radius: 12px; padding: 14px 16px;
             margin-bottom: 16px; border: 1px solid #f0f2f4;
@@ -431,7 +461,7 @@
                 <!-- 待还入口 -->
                 <div class="debt-entry" id="debtEntry">
                     <div class="debt-entry-left">
-                        <div class="debt-entry-title">还有这些责任</div>
+                        <div class="debt-entry-title">责任提醒</div>
                         <div class="debt-entry-row">
                             <span class="item">剩余责任 <span class="num" id="debtTotal">¥0</span></span>
                             <span class="item">本月承担 <span class="num" id="debtMonthly">¥0</span></span>
@@ -558,12 +588,27 @@
             </div>
         </div>
 
-        <!-- ========== 待还占位页 ========== -->
+        <!-- ========== 责任页面 ========== -->
         <div class="page" id="page-debts">
-            <div class="placeholder-page">
-                <div class="icon">📋</div>
-                <div class="text">责任功能即将上线</div>
+            <!-- 顶部摘要 -->
+            <div class="debt-summary">
+                <div class="debt-summary-item">
+                    <div class="debt-summary-label">总剩余责任</div>
+                    <div class="debt-summary-amount" id="debtPageTotal">¥0</div>
+                </div>
+                <div class="debt-summary-item">
+                    <div class="debt-summary-label">每月承担</div>
+                    <div class="debt-summary-amount" id="debtPageMonthly">¥0</div>
+                </div>
             </div>
+
+            <!-- 责任卡片列表 -->
+            <div class="debt-list" id="debtList">
+                <div class="debt-empty">暂无责任</div>
+            </div>
+
+            <!-- 新增责任浮动按钮 -->
+            <div class="debt-fab" id="debtFab">+</div>
         </div>
 
         <!-- ========== 底部导航 ========== -->
@@ -654,6 +699,55 @@
                 <button class="confirm-btn danger" id="confirmDeleteBtn">删除</button>
             </div>
         </div>
+
+        <!-- ========== 新增/编辑责任弹窗 ========== -->
+        <div class="modal-overlay" id="debtModalOverlay"></div>
+        <div class="modal-content" id="debtModal" style="border-radius:16px;">
+            <div class="modal-title" id="debtModalTitle">新增责任</div>
+            <div class="add-form" style="padding:0;">
+                <div class="form-row">
+                    <label>名称</label>
+                    <input type="text" id="debtName" placeholder="例如：信用卡">
+                </div>
+                <div class="form-row">
+                    <label>类型</label>
+                    <div style="display:flex;gap:6px;" id="debtTypeSelector">
+                        <div class="debt-type-btn active" data-type="installment">分期</div>
+                        <div class="debt-type-btn" data-type="loan">借款</div>
+                        <div class="debt-type-btn" data-type="other">其他</div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>原始金额</label>
+                    <input type="number" id="debtOriginal" inputmode="decimal" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>当前剩余金额</label>
+                    <input type="number" id="debtRemaining" inputmode="decimal" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>每月承担</label>
+                    <input type="number" id="debtInstallment" inputmode="decimal" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>承担日期（每月几号）</label>
+                    <input type="number" id="debtDueDay" min="1" max="31" placeholder="15">
+                </div>
+                <div class="form-row">
+                    <label>归属</label>
+                    <div style="display:flex;gap:6px;" id="debtOwnerSelector">
+                        <div class="debt-owner-btn" data-owner="self">自己</div>
+                        <div class="debt-owner-btn" data-owner="family">家里</div>
+                        <div class="debt-owner-btn" data-owner="son">儿子</div>
+                        <div class="debt-owner-btn" data-owner="studio">工作室</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeDebtModal()">取消</button>
+                    <button class="confirm-btn" id="debtSaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="db.js"></script>
@@ -694,6 +788,7 @@
             if (pageId === 'home') refreshHome();
             if (pageId === 'list') refreshList();
             if (pageId === 'analysis') refreshAnalysis();
+            if (pageId === 'debts') refreshDebtPage();
             if (pageId === 'add') resetAddForm();
         }
 
@@ -1309,6 +1404,235 @@
             var parts = dateStr.split('-');
             return parts[0] + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
         }
+
+        // ==================== 责任页面 ====================
+        var editingDebtId = null;
+
+        function refreshDebtPage() {
+            getDebtSummary().then(function(summary) {
+                document.getElementById('debtPageTotal').textContent = '¥' + (summary.totalRemaining || 0).toFixed(2);
+                document.getElementById('debtPageMonthly').textContent = '¥' + (summary.monthlyDue || 0).toFixed(2);
+
+                var activeDebts = summary.activeDebts || [];
+                var container = document.getElementById('debtList');
+                if (activeDebts.length === 0) {
+                    container.innerHTML = '<div class="debt-empty">暂无责任</div>';
+                    return;
+                }
+                var html = '';
+                activeDebts.forEach(function(d) {
+                    var periods = d.remainingPeriods || Math.ceil(d.remainingAmount / (d.installmentAmount || 1));
+                    var ends = '';
+                    if (d.dueDay) {
+                        var now = new Date();
+                        var totalMonths = periods;
+                        var endMonth = now.getMonth() + totalMonths;
+                        var endYear = now.getFullYear() + Math.floor(endMonth / 12);
+                        endMonth = (endMonth % 12) + 1;
+                        ends = '预计结束 ' + endYear + '年' + endMonth + '月';
+                    }
+                    var ownerName = d.owner ? getOwnerDisplay(d.owner) : '';
+                    var typeLabel = { 'installment': '分期', 'loan': '借款', 'other': '其他' };
+                    var typeName = typeLabel[d.type] || d.type;
+                    html +=
+                        '<div class="debt-card' + (d.status === 'settled' ? ' settled' : '') + '">' +
+                            '<div class="debt-card-header">' +
+                                '<div class="debt-card-name">' + (d.name || '') + '</div>' +
+                                '<div class="debt-card-owner">' + ownerName + '</div>' +
+                            '</div>' +
+                            '<div class="debt-card-amount">¥' + Number(d.remainingAmount).toFixed(2) + '</div>' +
+                            '<div class="debt-card-meta">每月承担 ¥' + Number(d.installmentAmount || 0).toFixed(2) +
+                                ' · 剩余' + periods + '期 · ' + typeName +
+                                (ends ? ' · ' + ends : '') +
+                            '</div>' +
+                            '<div class="debt-card-actions">' +
+                                '<button class="debt-card-btn settle" onclick="openSettleDebt(' + d.id + ')">标记结清</button>' +
+                                '<button class="debt-card-btn edit" onclick="openEditDebt(' + d.id + ')">编辑</button>' +
+                                '<button class="debt-card-btn delete" onclick="openDeleteDebt(' + d.id + ')">删除</button>' +
+                            '</div>' +
+                        '</div>';
+                });
+                container.innerHTML = html;
+            });
+        }
+
+        // 新增责任弹窗
+        document.getElementById('debtFab').addEventListener('click', function() {
+            editingDebtId = null;
+            document.getElementById('debtModalTitle').textContent = '新增责任';
+            document.getElementById('debtName').value = '';
+            document.getElementById('debtOriginal').value = '';
+            document.getElementById('debtRemaining').value = '';
+            document.getElementById('debtInstallment').value = '';
+            document.getElementById('debtDueDay').value = '';
+            // 默认类型
+            document.querySelectorAll('#debtTypeSelector .debt-type-btn').forEach(function(b) {
+                b.classList.toggle('active', b.getAttribute('data-type') === 'installment');
+            });
+            // 清除归属
+            document.querySelectorAll('#debtOwnerSelector .debt-owner-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            document.getElementById('debtModal').classList.add('active');
+            document.getElementById('debtModalOverlay').classList.add('active');
+        });
+
+        // 类型选择
+        document.querySelectorAll('#debtTypeSelector .debt-type-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#debtTypeSelector .debt-type-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+
+        // 归属选择
+        document.querySelectorAll('#debtOwnerSelector .debt-owner-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#debtOwnerSelector .debt-owner-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+
+        function closeDebtModal() {
+            document.getElementById('debtModal').classList.remove('active');
+            document.getElementById('debtModalOverlay').classList.remove('active');
+            editingDebtId = null;
+        }
+
+        document.getElementById('debtModalOverlay').addEventListener('click', closeDebtModal);
+
+        // 保存责任
+        document.getElementById('debtSaveBtn').addEventListener('click', function() {
+            var name = document.getElementById('debtName').value.trim();
+            if (!name) { alert('请输入名称'); return; }
+
+            var typeEl = document.querySelector('#debtTypeSelector .debt-type-btn.active');
+            var type = typeEl ? typeEl.getAttribute('data-type') : 'installment';
+
+            var originalAmount = parseFloat(document.getElementById('debtOriginal').value);
+            if (!originalAmount || originalAmount <= 0) { alert('请输入原始金额'); return; }
+
+            var remainingAmount = parseFloat(document.getElementById('debtRemaining').value);
+            if (!remainingAmount || remainingAmount <= 0) { alert('请输入当前剩余金额'); return; }
+
+            var installmentAmount = parseFloat(document.getElementById('debtInstallment').value) || 0;
+
+            var dueDay = parseInt(document.getElementById('debtDueDay').value) || 0;
+
+            var ownerEl = document.querySelector('#debtOwnerSelector .debt-owner-btn.active');
+            if (!ownerEl) { alert('请选择归属'); return; }
+            var owner = ownerEl.getAttribute('data-owner');
+
+            var remainingPeriods = installmentAmount > 0 ? Math.ceil(remainingAmount / installmentAmount) : 0;
+
+            var debt = {
+                name: name,
+                type: type,
+                originalAmount: originalAmount,
+                remainingAmount: remainingAmount,
+                installmentAmount: installmentAmount,
+                dueDay: dueDay > 0 ? dueDay : 0,
+                remainingPeriods: remainingPeriods,
+                owner: owner,
+                status: 'active'
+            };
+
+            if (editingDebtId) {
+                debt.id = editingDebtId;
+                updateDebt(debt).then(function() {
+                    closeDebtModal();
+                    refreshDebtPage();
+                    refreshHome();
+                }).catch(function(err) {
+                    alert('更新失败: ' + err);
+                });
+            } else {
+                addDebt(debt).then(function() {
+                    closeDebtModal();
+                    refreshDebtPage();
+                    refreshHome();
+                }).catch(function(err) {
+                    alert('添加失败: ' + err);
+                });
+            }
+        });
+
+        // 编辑责任
+        function openEditDebt(id) {
+            getAllDebts().then(function(debts) {
+                var debt = null;
+                for (var i = 0; i < debts.length; i++) {
+                    if (debts[i].id === id) { debt = debts[i]; break; }
+                }
+                if (!debt) return;
+                editingDebtId = id;
+                document.getElementById('debtModalTitle').textContent = '编辑责任';
+                document.getElementById('debtName').value = debt.name || '';
+                document.getElementById('debtOriginal').value = debt.originalAmount || '';
+                document.getElementById('debtRemaining').value = debt.remainingAmount || '';
+                document.getElementById('debtInstallment').value = debt.installmentAmount || '';
+                document.getElementById('debtDueDay').value = debt.dueDay || '';
+                // 类型
+                document.querySelectorAll('#debtTypeSelector .debt-type-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.getAttribute('data-type') === (debt.type || 'installment'));
+                });
+                // 归属
+                document.querySelectorAll('#debtOwnerSelector .debt-owner-btn').forEach(function(b) {
+                    b.classList.toggle('active', b.getAttribute('data-owner') === debt.owner);
+                });
+                document.getElementById('debtModal').classList.add('active');
+                document.getElementById('debtModalOverlay').classList.add('active');
+            });
+        }
+
+        // 标记结清
+        function openSettleDebt(id) {
+            if (!confirm('确认标记此责任为已结清？')) return;
+            settleDebt(id).then(function() {
+                refreshDebtPage();
+                refreshHome();
+            }).catch(function(err) {
+                alert('操作失败: ' + err);
+            });
+        }
+
+        // 删除责任
+        var deletingDebtId = null;
+
+        function openDeleteDebt(id) {
+            deletingDebtId = id;
+            document.getElementById('confirmTitle').textContent = '确认删除此责任？';
+            document.getElementById('confirmMsg').textContent = '此操作不可撤销';
+            document.getElementById('confirmModal').classList.add('active');
+            document.getElementById('confirmOverlay').classList.add('active');
+        }
+
+        // 重写删除确认按钮
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (deletingDebtId) {
+                deleteDebt(deletingDebtId).then(function() {
+                    closeConfirmModal();
+                    deletingDebtId = null;
+                    refreshDebtPage();
+                    refreshHome();
+                }).catch(function(err) {
+                    alert('删除失败: ' + err);
+                });
+            } else if (deletingId) {
+                // 原有流水删除逻辑
+                deleteRecord(deletingId).then(function() {
+                    closeConfirmModal();
+                    refreshList();
+                    refreshHome();
+                }).catch(function(err) {
+                    alert('删除失败: ' + err);
+                });
+            }
+        });
 
         // ==================== 初始化 ====================
         refreshHome();

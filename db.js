@@ -336,9 +336,9 @@ function getAvailableMonths() {
   });
 }
 
-// ==================== 待还（debts）操作 ====================
+// ==================== 责任（debts）操作 ====================
 
-// 获取所有待还
+// 获取所有责任
 function getAllDebts() {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -358,24 +358,126 @@ function getAllDebts() {
         }
       };
       request.onerror = function(event) {
-        reject('查询待还失败: ' + event.target.error.message);
+        reject('查询失败: ' + event.target.error.message);
       };
     });
   });
 }
 
-// 获取待还总额
+// 获取未结清的责任
+function getActiveDebts() {
+  return getAllDebts().then(function(debts) {
+    return debts.filter(function(d) {
+      return !d.status || d.status === 'active';
+    });
+  });
+}
+
+// 获取责任摘要
 function getDebtSummary() {
   return getAllDebts().then(function(debts) {
     var totalRemaining = 0;
     var monthlyDue = 0;
+    var activeDebts = [];
     debts.forEach(function(d) {
       if (d.status === 'active' || !d.status) {
         totalRemaining += Number(d.remainingAmount) || 0;
         monthlyDue += Number(d.installmentAmount) || 0;
+        activeDebts.push(d);
       }
     });
-    return { totalRemaining: totalRemaining, monthlyDue: monthlyDue };
+    return {
+      totalRemaining: totalRemaining,
+      monthlyDue: monthlyDue,
+      activeDebts: activeDebts,
+      settledCount: debts.length - activeDebts.length
+    };
+  });
+}
+
+// 新增责任
+function addDebt(debt) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_DEBTS, 'readwrite');
+      var store = tx.objectStore(STORE_DEBTS);
+
+      debt.status = debt.status || 'active';
+      debt.createdAt = Date.now();
+      debt.updatedAt = Date.now();
+
+      var request = store.add(debt);
+
+      request.onsuccess = function(event) {
+        resolve(event.target.result);
+      };
+      request.onerror = function(event) {
+        reject('添加失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 更新责任
+function updateDebt(debt) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_DEBTS, 'readwrite');
+      var store = tx.objectStore(STORE_DEBTS);
+
+      debt.updatedAt = Date.now();
+
+      var request = store.put(debt);
+
+      request.onsuccess = function() {
+        resolve(true);
+      };
+      request.onerror = function(event) {
+        reject('更新失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 删除责任
+function deleteDebt(id) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_DEBTS, 'readwrite');
+      var store = tx.objectStore(STORE_DEBTS);
+      var request = store.delete(id);
+
+      request.onsuccess = function() {
+        resolve(true);
+      };
+      request.onerror = function(event) {
+        reject('删除失败: ' + event.target.error.message);
+      };
+    });
+  });
+}
+
+// 标记结清
+function settleDebt(id) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_DEBTS, 'readwrite');
+      var store = tx.objectStore(STORE_DEBTS);
+      var getRequest = store.get(id);
+
+      getRequest.onsuccess = function() {
+        var debt = getRequest.result;
+        if (!debt) { reject('未找到'); return; }
+        debt.status = 'settled';
+        debt.remainingAmount = 0;
+        debt.remainingPeriods = 0;
+        debt.updatedAt = Date.now();
+        var putRequest = store.put(debt);
+        putRequest.onsuccess = function() { resolve(true); };
+        putRequest.onerror = function(e) { reject('更新失败'); };
+      };
+      getRequest.onerror = function(e) { reject('查询失败'); };
+    });
   });
 }
 
