@@ -239,15 +239,30 @@
         .owner-option:active { transform: scale(0.96); }
 
         /* 花哪儿了？分类 */
-        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
         .category-btn {
             padding: 12px 4px; text-align: center; border: 1.5px solid #e8ecf0;
             border-radius: 10px; background: #fff; cursor: pointer; font-size: 13px; color: #1a1a2e;
             -webkit-tap-highlight-color: transparent; transition: all 0.15s;
         }
-        .category-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+        .cat-icon { width: 32px; height: 32px; object-fit: contain; display: block; margin: 0 auto 4px; }
         .category-btn.selected { border-color: #5b8def; background: #f0f4ff; }
         .category-btn:active { transform: scale(0.96); }
+
+        /* 买买复盘标签 */
+        .review-tags {
+            display: none; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .review-tags.visible { display: flex; }
+        .review-tag {
+            flex: 1; min-width: 70px; padding: 8px 4px; text-align: center;
+            border: 1.5px solid #e8ecf0; border-radius: 8px; background: #fff;
+            cursor: pointer; font-size: 12px; color: #8e8e93;
+            -webkit-tap-highlight-color: transparent; transition: all 0.15s;
+        }
+        .review-tag.selected { border-color: #5b8def; background: #f0f4ff; color: #1a1a2e; }
+        .review-tag:active { transform: scale(0.96); }
+        .review-tag-label { font-size: 11px; color: #8e8e93; margin: 0 0 8px; }
 
         /* 日期 + 加句话（弱化） */
         .add-meta-row {
@@ -452,14 +467,23 @@
                 <!-- 花哪儿了？ -->
                 <div class="section-label">花哪儿了？</div>
                 <div class="category-grid" id="addCategories">
-                    <div class="category-btn" data-cat="necessities_food"><span class="icon">🍚</span>温饱</div>
-                    <div class="category-btn" data-cat="treat_food"><span class="icon">🍰</span>贪吃</div>
-                    <div class="category-btn" data-cat="shopping"><span class="icon">🛍️</span>买买</div>
-                    <div class="category-btn" data-cat="transport"><span class="icon">🚗</span>出行</div>
-                    <div class="category-btn" data-cat="learning"><span class="icon">📚</span>学习</div>
-                    <div class="category-btn" data-cat="household"><span class="icon">🏠</span>家用</div>
-                    <div class="category-btn" data-cat="health"><span class="icon">💊</span>健康</div>
-                    <div class="category-btn" data-cat="fun"><span class="icon">🎮</span>玩乐</div>
+                    <div class="category-btn" data-cat="necessities_food"><img class="cat-icon" src="assets/category-food.png" alt="温饱">温饱</div>
+                    <div class="category-btn" data-cat="treat_food"><img class="cat-icon" src="assets/category-treat.png" alt="贪吃">贪吃</div>
+                    <div class="category-btn" data-cat="shopping"><img class="cat-icon" src="assets/category-shopping.png" alt="买买">买买</div>
+                    <div class="category-btn" data-cat="transport"><img class="cat-icon" src="assets/category-transport.png" alt="出行">出行</div>
+                    <div class="category-btn" data-cat="learning"><img class="cat-icon" src="assets/category-learning.png" alt="学习">学习</div>
+                    <div class="category-btn" data-cat="household"><img class="cat-icon" src="assets/category-household.png" alt="家用">家用</div>
+                    <div class="category-btn" data-cat="health"><img class="cat-icon" src="assets/category-health.png" alt="健康">健康</div>
+                    <div class="category-btn" data-cat="fun"><img class="cat-icon" src="assets/category-fun.png" alt="玩乐">玩乐</div>
+                </div>
+
+                <!-- 买买复盘标签（选择买买时显示） -->
+                <div class="review-tags" id="reviewTags">
+                    <div class="review-tag-label">消费复盘</div>
+                    <div class="review-tag" data-tag="need">真需要</div>
+                    <div class="review-tag" data-tag="worth_it">买得值</div>
+                    <div class="review-tag" data-tag="could_skip">可不买</div>
+                    <div class="review-tag" data-tag="buying_for_buying">为买而买</div>
                 </div>
 
                 <!-- 日期 + 加句话（弱化） -->
@@ -579,14 +603,14 @@
                 <!-- 花哪儿了？ -->
                 <div class="section-label">花哪儿了？</div>
                 <div class="category-grid" id="editCategories">
-                    <div class="category-btn" data-cat="necessities_food"><span class="icon">🍚</span>温饱</div>
-                    <div class="category-btn" data-cat="treat_food"><span class="icon">🍰</span>贪吃</div>
-                    <div class="category-btn" data-cat="shopping"><span class="icon">🛍️</span>买买</div>
-                    <div class="category-btn" data-cat="transport"><span class="icon">🚗</span>出行</div>
-                    <div class="category-btn" data-cat="learning"><span class="icon">📚</span>学习</div>
-                    <div class="category-btn" data-cat="household"><span class="icon">🏠</span>家用</div>
-                    <div class="category-btn" data-cat="health"><span class="icon">💊</span>健康</div>
-                    <div class="category-btn" data-cat="fun"><span class="icon">🎮</span>玩乐</div>
+                    <div class="category-btn" data-cat="necessities_food"><img class="cat-icon" src="assets/category-food.png" alt="温饱">温饱</div>
+                    <div class="category-btn" data-cat="treat_food"><img class="cat-icon" src="assets/category-treat.png" alt="贪吃">贪吃</div>
+                    <div class="category-btn" data-cat="shopping"><img class="cat-icon" src="assets/category-shopping.png" alt="买买">买买</div>
+                    <div class="category-btn" data-cat="transport"><img class="cat-icon" src="assets/category-transport.png" alt="出行">出行</div>
+                    <div class="category-btn" data-cat="learning"><img class="cat-icon" src="assets/category-learning.png" alt="学习">学习</div>
+                    <div class="category-btn" data-cat="household"><img class="cat-icon" src="assets/category-household.png" alt="家用">家用</div>
+                    <div class="category-btn" data-cat="health"><img class="cat-icon" src="assets/category-health.png" alt="健康">健康</div>
+                    <div class="category-btn" data-cat="fun"><img class="cat-icon" src="assets/category-fun.png" alt="玩乐">玩乐</div>
                 </div>
 
                 <div class="form-row">
@@ -720,6 +744,28 @@
                 });
                 this.classList.add('selected');
                 validateSaveButton();
+
+                // 选择「买买」时显示复盘标签
+                var reviewTags = document.getElementById('reviewTags');
+                if (this.getAttribute('data-cat') === 'shopping') {
+                    reviewTags.classList.add('visible');
+                } else {
+                    reviewTags.classList.remove('visible');
+                    // 清除复盘标签选择
+                    document.querySelectorAll('.review-tag').forEach(function(t) {
+                        t.classList.remove('selected');
+                    });
+                }
+            });
+        });
+
+        // ==================== 记一笔：买买复盘标签 ====================
+        document.querySelectorAll('.review-tag').forEach(function(tag) {
+            tag.addEventListener('click', function() {
+                document.querySelectorAll('.review-tag').forEach(function(t) {
+                    t.classList.remove('selected');
+                });
+                this.classList.add('selected');
             });
         });
 
@@ -775,6 +821,11 @@
             document.querySelectorAll('#addCategories .category-btn').forEach(function(b) {
                 b.classList.remove('selected');
             });
+            // 隐藏复盘标签并清除选择
+            document.getElementById('reviewTags').classList.remove('visible');
+            document.querySelectorAll('.review-tag').forEach(function(t) {
+                t.classList.remove('selected');
+            });
             // 重置日期
             var now = new Date();
             dateInput.value = now.getFullYear() + '-' +
@@ -817,6 +868,14 @@
                 date: date,
                 note: note
             };
+
+            // 如果选择了买买且有复盘标签，写入 reviewTag
+            if (category === 'shopping') {
+                var reviewEl = document.querySelector('.review-tag.selected');
+                if (reviewEl) {
+                    record.reviewTag = reviewEl.getAttribute('data-tag');
+                }
+            }
 
             addRecord(record).then(function() {
                 resetAddForm();

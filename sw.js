@@ -1,7 +1,7 @@
 /* 小账本 V0.2 - Service Worker */
-/* 版本: 20260813-1 - Step 3 记一笔+编辑升级 */
+/* 版本: 20260813-2 - Step 3 分类图标+复盘标签 */
 
-const CACHE_NAME = 'xiaozhangben-v07';
+const CACHE_NAME = 'xiaozhangben-v08';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -18,7 +18,15 @@ const PRECACHE_URLS = [
   './assets/nav-flow.png',
   './assets/nav-add.png',
   './assets/nav-look.png',
-  './assets/nav-debt.png'
+  './assets/nav-debt.png',
+  './assets/category-food.png',
+  './assets/category-treat.png',
+  './assets/category-shopping.png',
+  './assets/category-transport.png',
+  './assets/category-learning.png',
+  './assets/category-household.png',
+  './assets/category-health.png',
+  './assets/category-fun.png'
 ];
 
 // 安装：预缓存核心文件
