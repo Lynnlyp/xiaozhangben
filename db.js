@@ -1,13 +1,14 @@
-/* 小账本 V0.2 - IndexedDB 数据层 */
+/* 小账本 V0.5 - IndexedDB 数据层 */
 
 const DB_NAME = 'xiaozhangben';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_RECORDS = 'records';
 const STORE_DEBTS = 'debts';
+const STORE_REPAYMENTS = 'repayments';
 
 let _db = null;
 
-// 新 9 分类映射（内部 ID → 显示名）
+// 新 8 分类映射（内部 ID → 显示名）
 var NEW_CATEGORIES = {
   'necessities_food': '温饱',
   'treat_food':      '贪吃',
@@ -16,8 +17,7 @@ var NEW_CATEGORIES = {
   'learning':        '学习',
   'household':       '家用',
   'health':          '健康',
-  'fun':             '玩乐',
-  'responsibility':  '责任'
+  'fun':             '玩乐'
 };
 
 // 消费分类列表（用于统计「本月花了」）
@@ -51,6 +51,8 @@ var OWNER_NAMES = {
 
 // 获取分类显示名（兼容新旧）
 function getCategoryDisplay(category) {
+  // V0.4 旧 responsibility 数据 → 显示「责任（历史）」
+  if (category === 'responsibility') return '责任（历史）';
   // V0.2 新英文 ID
   if (NEW_CATEGORIES[category]) return NEW_CATEGORIES[category];
   // V0.1 旧中文分类 → 明确映射
@@ -80,7 +82,21 @@ function openDB() {
       var db = event.target.result;
       var oldVersion = event.oldVersion;
 
-      // V0.1 升级到 V0.2：新增 debts store
+      // V0.1: 创建 records store
+      if (oldVersion < 1) {
+        if (!db.objectStoreNames.contains(STORE_RECORDS)) {
+          var store = db.createObjectStore(STORE_RECORDS, {
+            keyPath: 'id',
+            autoIncrement: true
+          });
+          store.createIndex('date', 'date', { unique: false });
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+          store.createIndex('owner', 'owner', { unique: false });
+        }
+      }
+
+      // V0.2: 新增 debts store
       if (oldVersion < 2) {
         if (!db.objectStoreNames.contains(STORE_DEBTS)) {
           var debtStore = db.createObjectStore(STORE_DEBTS, {
@@ -93,16 +109,48 @@ function openDB() {
         }
       }
 
-      // 如果 records store 还不存在（全新安装）
-      if (!db.objectStoreNames.contains(STORE_RECORDS)) {
-        var store = db.createObjectStore(STORE_RECORDS, {
-          keyPath: 'id',
-          autoIncrement: true
-        });
-        store.createIndex('date', 'date', { unique: false });
-        store.createIndex('type', 'type', { unique: false });
-        store.createIndex('createdAt', 'createdAt', { unique: false });
-        store.createIndex('owner', 'owner', { unique: false });
+      // V0.5: 新增 repayments store + 迁移旧 responsibility 数据
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains(STORE_REPAYMENTS)) {
+          var repayStore = db.createObjectStore(STORE_REPAYMENTS, {
+            keyPath: 'id',
+            autoIncrement: true
+          });
+          repayStore.createIndex('debtId', 'debtId', { unique: false });
+          repayStore.createIndex('date', 'date', { unique: false });
+          repayStore.createIndex('createdAt', 'createdAt', { unique: false });
+          repayStore.createIndex('status', 'status', { unique: false });
+        }
+
+        // 迁移：将 records 中旧 responsibility 记录复制到 repayments
+        if (db.objectStoreNames.contains(STORE_RECORDS)) {
+          var tx = event.target.transaction;
+          var recordStore = tx.objectStore(STORE_RECORDS);
+          var repayStore = tx.objectStore(STORE_REPAYMENTS);
+          var cursorReq = recordStore.openCursor();
+
+          cursorReq.onsuccess = function(e) {
+            var cursor = e.target.result;
+            if (cursor) {
+              var r = cursor.value;
+              if (r.category === 'responsibility') {
+                var repayment = {
+                  debtId: null,
+                  amount: Number(r.amount) || 0,
+                  date: r.date || '',
+                  note: r.note || '',
+                  owner: r.owner || null,
+                  status: 'confirmed',
+                  migratedFrom: r.id,
+                  createdAt: r.createdAt || Date.now(),
+                  updatedAt: r.createdAt || Date.now()
+                };
+                repayStore.add(repayment);
+              }
+              cursor.continue();
+            }
+          };
+        }
       }
     };
 
@@ -117,14 +165,15 @@ function openDB() {
   });
 }
 
-// 添加一条记录（V0.2 支持 owner / reviewTag）
+// ==================== records 操作 ====================
+
+// 添加一条记录（消费）
 function addRecord(record) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
       var tx = db.transaction(STORE_RECORDS, 'readwrite');
       var store = tx.objectStore(STORE_RECORDS);
 
-      // 补充时间戳
       record.createdAt = Date.now();
 
       var request = store.add(record);
@@ -181,37 +230,6 @@ function getMonthRecords() {
   });
 }
 
-// 计算本月支出（不含收入）
-function getMonthExpense() {
-  return getMonthRecords().then(function(records) {
-    var expense = 0;
-    records.forEach(function(r) {
-      if (r.type === 'expense') {
-        expense += Number(r.amount) || 0;
-      }
-    });
-    return expense;
-  });
-}
-
-// 按 owner 统计本月支出
-function getMonthExpenseByOwner() {
-  return getMonthRecords().then(function(records) {
-    var stats = { 'self': 0, 'family': 0, 'son': 0, 'studio': 0, 'unclassified': 0 };
-    records.forEach(function(r) {
-      if (r.type === 'expense') {
-        var amt = Number(r.amount) || 0;
-        if (r.owner && stats[r.owner] !== undefined) {
-          stats[r.owner] += amt;
-        } else {
-          stats.unclassified += amt;
-        }
-      }
-    });
-    return stats;
-  });
-}
-
 // 按类型筛选记录
 function getRecordsByType(type) {
   return getAllRecords().then(function(records) {
@@ -224,20 +242,6 @@ function getRecordsByType(type) {
 function getRecentRecords(limit) {
   return getAllRecords().then(function(records) {
     return records.slice(0, limit || 10);
-  });
-}
-
-// 支出分类统计（本月）
-function getCategoryStats() {
-  return getMonthRecords().then(function(records) {
-    var stats = {};
-    records.forEach(function(r) {
-      if (r.type === 'expense') {
-        var cat = r.category || '其他';
-        stats[cat] = (stats[cat] || 0) + Number(r.amount);
-      }
-    });
-    return stats;
   });
 }
 
@@ -320,7 +324,7 @@ function getCategoryStatsByMonth(month) {
   });
 }
 
-// 获取所有有数据的月份列表（按时间倒序）
+// 获取所有有数据的月份列表
 function getAvailableMonths() {
   return getAllRecords().then(function(records) {
     var monthSet = {};
@@ -338,7 +342,6 @@ function getAvailableMonths() {
 
 // ==================== 责任（debts）操作 ====================
 
-// 获取所有责任
 function getAllDebts() {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -364,7 +367,6 @@ function getAllDebts() {
   });
 }
 
-// 获取未结清的责任
 function getActiveDebts() {
   return getAllDebts().then(function(debts) {
     return debts.filter(function(d) {
@@ -373,7 +375,6 @@ function getActiveDebts() {
   });
 }
 
-// 获取责任摘要
 function getDebtSummary() {
   return getAllDebts().then(function(debts) {
     var totalRemaining = 0;
@@ -395,7 +396,6 @@ function getDebtSummary() {
   });
 }
 
-// 新增责任
 function addDebt(debt) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -418,7 +418,6 @@ function addDebt(debt) {
   });
 }
 
-// 更新责任
 function updateDebt(debt) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -439,7 +438,6 @@ function updateDebt(debt) {
   });
 }
 
-// 删除责任
 function deleteDebt(id) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -457,7 +455,6 @@ function deleteDebt(id) {
   });
 }
 
-// 标记结清
 function settleDebt(id) {
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
@@ -481,142 +478,215 @@ function settleDebt(id) {
   });
 }
 
-// ==================== 导出/导入 ====================
+// ==================== 还款（repayments）操作 ====================
 
-// 导出所有数据（V0.2 格式，包含 records + debts）
-function exportAllData() {
-  return getAllRecords().then(function(records) {
-    return getAllDebts().then(function(debts) {
-      var exportObj = {
-        app: '小账本',
-        version: '0.2',
-        exportTime: new Date().toISOString(),
-        recordCount: records.length,
-        debtCount: debts.length,
-        records: records,
-        debts: debts
+function addRepayment(repayment) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction([STORE_REPAYMENTS, STORE_DEBTS], 'readwrite');
+
+      // 写入 repayment
+      repayment.status = repayment.status || 'confirmed';
+      repayment.createdAt = Date.now();
+      repayment.updatedAt = Date.now();
+
+      var repayStore = tx.objectStore(STORE_REPAYMENTS);
+      var addRequest = repayStore.add(repayment);
+
+      addRequest.onsuccess = function() {
+        // 添加成功后重新计算 debt.remainingAmount
+        recalcDebtRemaining(tx, repayment.debtId).then(function() {
+          resolve(addRequest.result);
+        }).catch(function(err) {
+          reject(err);
+        });
       };
-      return JSON.stringify(exportObj, null, 2);
+
+      addRequest.onerror = function(event) {
+        reject('添加还款失败: ' + event.target.error.message);
+      };
     });
   });
 }
 
-// 验证导入数据（不碰数据库）
-function validateImportData(data) {
-  // 判断版本
-  var isV02 = (data.version === '0.2') || Object.prototype.hasOwnProperty.call(data, 'debts');
-  var records = data.records || data;
-  var debts = data.debts;
+function getRepaymentsByDebtId(debtId) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(STORE_REPAYMENTS, 'readonly');
+      var store = tx.objectStore(STORE_REPAYMENTS);
+      var index = store.index('debtId');
+      var request = index.openCursor(IDBKeyRange.only(debtId));
 
-  // 验证 records 是数组
-  if (!Array.isArray(records)) {
-    return { valid: false, error: 'records 必须是数组' };
-  }
-
-  // 验证 debts 如果是数组则必须是数组
-  if (debts !== undefined && !Array.isArray(debts)) {
-    return { valid: false, error: 'debts 必须是数组' };
-  }
-
-  // 逐条验证 records
-  for (var i = 0; i < records.length; i++) {
-    var r = records[i];
-    if (typeof r.amount !== 'number' || r.amount <= 0) {
-      return { valid: false, error: '第 ' + (i+1) + ' 条流水金额无效' };
-    }
-    if (r.type !== 'expense' && r.type !== 'income') {
-      return { valid: false, error: '第 ' + (i+1) + ' 条流水类型无效' };
-    }
-    if (r.date && typeof r.date !== 'string') {
-      return { valid: false, error: '第 ' + (i+1) + ' 条流水日期格式无效' };
-    }
-    if (r.id !== undefined && typeof r.id !== 'number') {
-      return { valid: false, error: '第 ' + (i+1) + ' 条流水 id 无效' };
-    }
-  }
-
-  // 逐条验证 debts
-  if (debts) {
-    for (var j = 0; j < debts.length; j++) {
-      var d = debts[j];
-      if (!d.name || typeof d.name !== 'string') {
-        return { valid: false, error: '第 ' + (j+1) + ' 条待还名称无效' };
-      }
-      if (typeof d.originalAmount !== 'number') {
-        return { valid: false, error: '第 ' + (j+1) + ' 条待还金额无效' };
-      }
-    }
-  }
-
-  return { valid: true, records: records, debts: debts, isV02: isV02 };
+      var repayments = [];
+      request.onsuccess = function(event) {
+        var cursor = event.target.result;
+        if (cursor) {
+          repayments.push(cursor.value);
+          cursor.continue();
+        } else {
+          // 按时间倒序
+          repayments.sort(function(a, b) {
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+          resolve(repayments);
+        }
+      };
+      request.onerror = function(event) {
+        reject('查询失败: ' + event.target.error.message);
+      };
+    });
+  });
 }
 
-// 批量导入记录（V0.2 安全导入）
-function importRecords(jsonStr) {
-  var data;
-  try {
-    data = JSON.parse(jsonStr);
-  } catch(e) {
-    return Promise.reject('JSON 格式错误');
-  }
-
-  // 完整校验（不碰数据库）
-  var validationResult = validateImportData(data);
-  if (!validationResult.valid) {
-    return Promise.reject(validationResult.error);
-  }
-
-  var isV02 = validationResult.isV02;
-  var records = validationResult.records;
-  var debts = validationResult.debts;
-
-  // 判断涉及哪些 store
-  var storeNames = [STORE_RECORDS];
-  if (isV02) {
-    storeNames.push(STORE_DEBTS);
-  }
+function getMonthRepaymentTotal() {
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = String(now.getMonth() + 1).padStart(2, '0');
+  var monthPrefix = y + '-' + m;
 
   return openDB().then(function(db) {
     return new Promise(function(resolve, reject) {
-      var tx = db.transaction(storeNames, 'readwrite');
+      var tx = db.transaction(STORE_REPAYMENTS, 'readonly');
+      var store = tx.objectStore(STORE_REPAYMENTS);
+      var request = store.getAll();
 
-      tx.onerror = function(event) {
-        reject('导入失败，事务已回滚');
+      request.onsuccess = function(event) {
+        var all = event.target.result || [];
+        var total = 0;
+        all.forEach(function(r) {
+          if (r.status === 'confirmed' && r.date && r.date.startsWith(monthPrefix)) {
+            total += Number(r.amount) || 0;
+          }
+        });
+        resolve(total);
       };
-      tx.onabort = function(event) {
-        reject('导入中止，数据已回滚');
+      request.onerror = function(event) {
+        reject('查询失败: ' + event.target.error.message);
       };
-      tx.oncomplete = function() {
-        resolve('导入成功');
-      };
-
-      // 清空 + 写入 records
-      var recordStore = tx.objectStore(STORE_RECORDS);
-      recordStore.clear();
-      records.forEach(function(r) {
-        if (!r.createdAt) {
-          r.createdAt = Date.now();
-        }
-        recordStore.add(r);
-      });
-
-      // V0.2 完整备份：清空 + 写入 debts
-      if (isV02) {
-        var debtStore = tx.objectStore(STORE_DEBTS);
-        debtStore.clear();
-        if (debts) {
-          debts.forEach(function(d) {
-            debtStore.add(d);
-          });
-        }
-      }
     });
+  });
+}
+
+function deleteRepayment(id) {
+  return openDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction([STORE_REPAYMENTS, STORE_DEBTS], 'readwrite');
+
+      // 先获取 repayment 得到 debtId
+      var repayStore = tx.objectStore(STORE_REPAYMENTS);
+      var getRequest = repayStore.get(id);
+
+      getRequest.onsuccess = function() {
+        var repayment = getRequest.result;
+        if (!repayment) { reject('未找到'); return; }
+
+        var debtId = repayment.debtId;
+        var deleteRequest = repayStore.delete(id);
+
+        deleteRequest.onsuccess = function() {
+          if (debtId) {
+            recalcDebtRemaining(tx, debtId).then(function() {
+              resolve(true);
+            }).catch(function(err) {
+              reject(err);
+            });
+          } else {
+            resolve(true);
+          }
+        };
+        deleteRequest.onerror = function(e) {
+          reject('删除失败');
+        };
+      };
+      getRequest.onerror = function(e) {
+        reject('查询失败');
+      };
+    });
+  });
+}
+
+// 重新计算 debt.remainingAmount
+function recalcDebtRemaining(tx, debtId) {
+  return new Promise(function(resolve, reject) {
+    if (!debtId) { resolve(); return; }
+
+    var repayStore = tx.objectStore(STORE_REPAYMENTS);
+    var debtStore = tx.objectStore(STORE_DEBTS);
+
+    // 获取关联 debt
+    var debtGet = debtStore.get(debtId);
+    debtGet.onsuccess = function() {
+      var debt = debtGet.result;
+      if (!debt) { resolve(); return; }
+
+      // 计算所有有效 repayments 总和
+      var index = repayStore.index('debtId');
+      var cursorReq = index.openCursor(IDBKeyRange.only(debtId));
+
+      var totalPaid = 0;
+      cursorReq.onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (cursor) {
+          if (cursor.value.status === 'confirmed') {
+            totalPaid += Number(cursor.value.amount) || 0;
+          }
+          cursor.continue();
+        } else {
+          // 计算新的剩余金额
+          var newRemaining = Math.max(0, (Number(debt.originalAmount) || 0) - totalPaid);
+          debt.remainingAmount = newRemaining;
+          debt.remainingPeriods = Math.ceil(newRemaining / (Number(debt.installmentAmount) || 1));
+          if (newRemaining <= 0) {
+            debt.status = 'settled';
+          }
+          debt.updatedAt = Date.now();
+          debtStore.put(debt);
+          resolve();
+        }
+      };
+      cursorReq.onerror = function() { reject('计算失败'); };
+    };
+    debtGet.onerror = function() { reject('查询债务失败'); };
+  });
+}
+
+// ==================== 导出/导入 ====================
+
+function exportAllData() {
+  var records, debts, repayments;
+  return getAllRecords().then(function(r) {
+    records = r;
+    return getAllDebts();
+  }).then(function(d) {
+    debts = d;
+    return openDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(STORE_REPAYMENTS, 'readonly');
+        var store = tx.objectStore(STORE_REPAYMENTS);
+        var req = store.getAll();
+        req.onsuccess = function() { resolve(req.result || []); };
+        req.onerror = function(e) { reject('查询失败'); };
+      });
+    });
+  }).then(function(r) {
+    repayments = r;
+    var exportObj = {
+      app: '小账本',
+      version: '0.5',
+      exportTime: new Date().toISOString(),
+      recordCount: records.length,
+      debtCount: debts.length,
+      repaymentCount: repayments.length,
+      records: records,
+      debts: debts,
+      repayments: repayments
+    };
+    return JSON.stringify(exportObj, null, 2);
   });
 }
 
 // ==================== 首页统计 ====================
 
-// 获取首页数据（本月消费 + 本月责任 + 待还总额 + 最近流水）
 function getHomeData() {
   var now = new Date();
   var y = now.getFullYear();
@@ -628,38 +698,21 @@ function getHomeData() {
       return r.date && r.date.startsWith(monthPrefix);
     });
 
-    // 本月消费（仅8个消费分类）
+    // 本月消费（仅8个消费分类，不含 responsibility）
     var totalConsumption = 0;
-    // 本月责任
-    var totalResponsibility = 0;
-    // 消费 owner 统计
     var ownerStats = { 'self': 0, 'family': 0, 'son': 0, 'studio': 0, 'unclassified': 0 };
-    // 责任 owner 统计
-    var respOwnerStats = { 'self': 0, 'family': 0, 'son': 0, 'studio': 0, 'unclassified': 0 };
-    // 最近流水（所有月份）
     var recent = records.slice(0, 10);
 
     monthRecords.forEach(function(r) {
       if (r.type === 'expense') {
         var amt = Number(r.amount) || 0;
-        var cat = r.category;
-
-        if (cat === 'responsibility') {
-          // 责任统计
-          totalResponsibility += amt;
-          if (r.owner && respOwnerStats[r.owner] !== undefined) {
-            respOwnerStats[r.owner] += amt;
-          } else {
-            respOwnerStats.unclassified += amt;
-          }
+        // 跳过旧 responsibility 数据（已迁移到 repayments）
+        if (r.category === 'responsibility') return;
+        totalConsumption += amt;
+        if (r.owner && ownerStats[r.owner] !== undefined) {
+          ownerStats[r.owner] += amt;
         } else {
-          // 消费统计（含旧/未分类数据）
-          totalConsumption += amt;
-          if (r.owner && ownerStats[r.owner] !== undefined) {
-            ownerStats[r.owner] += amt;
-          } else {
-            ownerStats.unclassified += amt;
-          }
+          ownerStats.unclassified += amt;
         }
       }
     });
@@ -667,12 +720,9 @@ function getHomeData() {
     return {
       totalConsumption: totalConsumption,
       ownerStats: ownerStats,
-      totalResponsibility: totalResponsibility,
-      respOwnerStats: respOwnerStats,
       recentRecords: recent
     };
   }).then(function(homeData) {
-    // 获取待还总额
     return getDebtSummary().then(function(debtSummary) {
       homeData.debtSummary = debtSummary;
       return homeData;
