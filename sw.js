@@ -1,7 +1,7 @@
 /* 小账本 V0.2 - Service Worker */
-/* 版本: 20260812-1 - Step 2 首页翻新 */
+/* 版本: 20260813-1 - Step 3 记一笔+编辑升级 */
 
-const CACHE_NAME = 'xiaozhangben-v06';
+const CACHE_NAME = 'xiaozhangben-v07';
 const PRECACHE_URLS = [
   './',
   './index.html',

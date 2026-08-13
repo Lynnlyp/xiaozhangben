@@ -195,44 +195,84 @@
         }
         .tab-add:active { transform: scale(0.95); }
 
-        /* ============ 记一笔（保留 V0.1 样式） ============ */
+        /* ============ 记一笔（V0.2） ============ */
         .add-header { padding: 16px 16px 8px; display: flex; justify-content: space-between; }
         .add-header .back-btn { font-size: 16px; color: #5b8def; cursor: pointer; }
         .add-header .title { font-size: 17px; font-weight: 600; color: #1a1a2e; }
         .add-header .spacer { width: 40px; }
         .add-form { padding: 0 16px 16px; }
-        .type-toggle { display: flex; gap: 0; margin-bottom: 16px; }
-        .type-btn { flex: 1; padding: 8px; text-align: center; font-size: 14px; border: 1px solid #e8ecf0; background: #fff; color: #8e8e93; cursor: pointer; }
-        .type-btn:first-child { border-radius: 8px 0 0 8px; }
-        .type-btn:last-child { border-radius: 0 8px 8px 0; }
-        .type-btn.active { background: #5b8def; color: #fff; border-color: #5b8def; }
         .amount-input-wrap { margin-bottom: 16px; }
         .amount-input-wrap input {
-            width: 100%; padding: 16px; font-size: 28px; font-weight: 700;
-            border: 1px solid #e8ecf0; border-radius: 12px; outline: none;
-            text-align: center; font-family: inherit;
+            width: 100%; padding: 16px; font-size: 32px; font-weight: 700;
+            border: none; border-bottom: 2px solid #e8ecf0; outline: none;
+            text-align: center; font-family: inherit; background: transparent;
+            border-radius: 0;
         }
-        .amount-input-wrap input:focus { border-color: #5b8def; }
-        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+        .amount-input-wrap input:focus { border-bottom-color: #5b8def; }
+        .amount-input-wrap input::placeholder { color: #d1d1d6; }
+
+        .section-label {
+            font-size: 14px; font-weight: 500; color: #8e8e93;
+            margin-bottom: 10px; margin-top: 4px;
+        }
+
+        /* 算哪边？选择器 */
+        .owner-selector {
+            display: flex; gap: 8px; margin-bottom: 20px;
+        }
+        .owner-option {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            padding: 12px 4px 8px; border-radius: 12px;
+            border: 1.5px solid #e8ecf0; background: #fff;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            transition: all 0.15s;
+        }
+        .owner-option img {
+            width: 40px; height: 40px; object-fit: contain; margin-bottom: 4px;
+        }
+        .owner-option span {
+            font-size: 13px; font-weight: 500; color: #1a1a2e;
+        }
+        .owner-option.selected {
+            border-color: #5b8def; background: #f0f4ff;
+        }
+        .owner-option:active { transform: scale(0.96); }
+
+        /* 花哪儿了？分类 */
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
         .category-btn {
-            padding: 12px 4px; text-align: center; border: 1px solid #e8ecf0;
+            padding: 12px 4px; text-align: center; border: 1.5px solid #e8ecf0;
             border-radius: 10px; background: #fff; cursor: pointer; font-size: 13px; color: #1a1a2e;
+            -webkit-tap-highlight-color: transparent; transition: all 0.15s;
         }
         .category-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
         .category-btn.selected { border-color: #5b8def; background: #f0f4ff; }
-        .form-row { margin-bottom: 12px; }
-        .form-row label { font-size: 13px; color: #8e8e93; display: block; margin-bottom: 4px; }
-        .form-row input, .form-row textarea {
+        .category-btn:active { transform: scale(0.96); }
+
+        /* 日期 + 加句话（弱化） */
+        .add-meta-row {
+            display: flex; gap: 16px; margin-bottom: 16px;
+            padding: 8px 0; border-top: 1px solid #f0f2f4;
+        }
+        .date-label, .note-label {
+            font-size: 13px; color: #c7c7cc; cursor: pointer;
+            padding: 4px 0;
+        }
+        .date-label:hover, .note-label:hover { color: #5b8def; }
+        .add-meta-hidden { margin-bottom: 12px; }
+        .add-meta-hidden input {
             width: 100%; padding: 10px 12px; font-size: 15px;
             border: 1px solid #e8ecf0; border-radius: 8px; outline: none; font-family: inherit;
         }
-        .form-row input:focus, .form-row textarea:focus { border-color: #5b8def; }
+        .add-meta-hidden input:focus { border-color: #5b8def; }
+
         .save-btn {
             width: 100%; padding: 14px; font-size: 16px; font-weight: 600;
             background: #5b8def; color: #fff; border: none; border-radius: 12px;
-            cursor: pointer; margin-top: 8px;
+            cursor: pointer; margin-top: 4px;
         }
         .save-btn:active { opacity: 0.85; }
+        .save-btn.disabled { opacity: 0.4; pointer-events: none; }
 
         /* ============ 流水页（保留 V0.1 样式，适配新数据） ============ */
         .list-filters { display: flex; gap: 8px; padding: 12px 16px; }
@@ -379,7 +419,7 @@
             </div>
         </div>
 
-        <!-- ========== 记一笔（保留 V0.1） ========== -->
+        <!-- ========== 记一笔（V0.2） ========== -->
         <div class="page" id="page-add">
             <div class="add-header">
                 <span class="spacer"></span>
@@ -387,16 +427,33 @@
                 <span class="back-btn" onclick="switchPage('home')">✕</span>
             </div>
             <div class="add-form">
-                <div class="type-toggle">
-                    <div class="type-btn active" data-type="expense">支出</div>
-                    <div class="type-btn" data-type="income">收入</div>
-                </div>
+                <!-- 金额 -->
                 <div class="amount-input-wrap">
                     <input type="number" id="amountInput" inputmode="decimal" pattern="[0-9]*" placeholder="0.00" step="0.01">
                 </div>
+
+                <!-- 算哪边？ -->
+                <div class="section-label">算哪边？</div>
+                <div class="owner-selector" id="addOwnerSelector">
+                    <div class="owner-option" data-owner="self">
+                        <img src="assets/owner-self.png" alt="自己"><span>自己</span>
+                    </div>
+                    <div class="owner-option" data-owner="family">
+                        <img src="assets/owner-family.png" alt="家里"><span>家里</span>
+                    </div>
+                    <div class="owner-option" data-owner="son">
+                        <img src="assets/owner-son.png" alt="儿子"><span>儿子</span>
+                    </div>
+                    <div class="owner-option" data-owner="studio">
+                        <img src="assets/owner-studio.png" alt="工作室"><span>工作室</span>
+                    </div>
+                </div>
+
+                <!-- 花哪儿了？ -->
+                <div class="section-label">花哪儿了？</div>
                 <div class="category-grid" id="addCategories">
                     <div class="category-btn" data-cat="necessities_food"><span class="icon">🍚</span>温饱</div>
-                    <div class="category-btn selected" data-cat="treat_food"><span class="icon">🍰</span>贪吃</div>
+                    <div class="category-btn" data-cat="treat_food"><span class="icon">🍰</span>贪吃</div>
                     <div class="category-btn" data-cat="shopping"><span class="icon">🛍️</span>买买</div>
                     <div class="category-btn" data-cat="transport"><span class="icon">🚗</span>出行</div>
                     <div class="category-btn" data-cat="learning"><span class="icon">📚</span>学习</div>
@@ -404,14 +461,19 @@
                     <div class="category-btn" data-cat="health"><span class="icon">💊</span>健康</div>
                     <div class="category-btn" data-cat="fun"><span class="icon">🎮</span>玩乐</div>
                 </div>
-                <div class="form-row">
-                    <label>日期</label>
+
+                <!-- 日期 + 加句话（弱化） -->
+                <div class="add-meta-row">
+                    <span class="date-label" id="addDateLabel">今天</span>
+                    <span class="note-label" id="addNoteLabel">＋ 加句话</span>
+                </div>
+                <div class="add-meta-hidden" id="addDatePicker" style="display:none;">
                     <input type="date" id="dateInput">
                 </div>
-                <div class="form-row">
-                    <label>＋ 加句话</label>
+                <div class="add-meta-hidden" id="addNoteInput" style="display:none;">
                     <input type="text" id="noteInput" placeholder="可选">
                 </div>
+
                 <button class="save-btn" id="saveBtn">记下</button>
             </div>
         </div>
@@ -488,18 +550,34 @@
             </div>
         </div>
 
-        <!-- ========== 编辑弹窗 ========== -->
+        <!-- ========== 编辑弹窗（V0.2） ========== -->
         <div class="modal-overlay" id="editOverlay"></div>
         <div class="modal-content" id="editModal">
             <div class="modal-title">编辑流水</div>
             <div class="add-form" style="padding:0;">
-                <div class="type-toggle" id="editTypeToggle">
-                    <div class="type-btn" data-type="expense">支出</div>
-                    <div class="type-btn" data-type="income">收入</div>
-                </div>
                 <div class="amount-input-wrap">
                     <input type="number" id="editAmount" inputmode="decimal" placeholder="0.00" step="0.01">
                 </div>
+
+                <!-- 算哪边？ -->
+                <div class="section-label">算哪边？</div>
+                <div class="owner-selector" id="editOwnerSelector">
+                    <div class="owner-option" data-owner="self">
+                        <img src="assets/owner-self.png" alt="自己"><span>自己</span>
+                    </div>
+                    <div class="owner-option" data-owner="family">
+                        <img src="assets/owner-family.png" alt="家里"><span>家里</span>
+                    </div>
+                    <div class="owner-option" data-owner="son">
+                        <img src="assets/owner-son.png" alt="儿子"><span>儿子</span>
+                    </div>
+                    <div class="owner-option" data-owner="studio">
+                        <img src="assets/owner-studio.png" alt="工作室"><span>工作室</span>
+                    </div>
+                </div>
+
+                <!-- 花哪儿了？ -->
+                <div class="section-label">花哪儿了？</div>
                 <div class="category-grid" id="editCategories">
                     <div class="category-btn" data-cat="necessities_food"><span class="icon">🍚</span>温饱</div>
                     <div class="category-btn" data-cat="treat_food"><span class="icon">🍰</span>贪吃</div>
@@ -510,12 +588,13 @@
                     <div class="category-btn" data-cat="health"><span class="icon">💊</span>健康</div>
                     <div class="category-btn" data-cat="fun"><span class="icon">🎮</span>玩乐</div>
                 </div>
+
                 <div class="form-row">
                     <label>日期</label>
                     <input type="date" id="editDate">
                 </div>
                 <div class="form-row">
-                    <label>备注</label>
+                    <label>＋ 加句话</label>
                     <input type="text" id="editNote" placeholder="可选">
                 </div>
                 <div class="modal-actions">
@@ -547,7 +626,6 @@
                     if (installing) {
                         installing.onstatechange = function() {
                             if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                                // 新版本已安装，提示刷新
                                 if (confirm('小账本已更新，刷新后使用新版本？')) {
                                     window.location.reload();
                                 }
@@ -562,13 +640,8 @@
 
         // ==================== 页面切换 ====================
         var pageNames = ['home', 'add', 'list', 'analysis', 'debts'];
-        var headerTitles = {
-            home: '小账本', add: '记一笔', list: '流水', analysis: '看看', debts: '待还'
-        };
-
         var tabItems = document.querySelectorAll('.tab-item');
         var pages = document.querySelectorAll('.page');
-        var headerTitle = document.getElementById('headerTitle');
 
         function switchPage(pageId) {
             pages.forEach(function(p) { p.classList.remove('active'); });
@@ -578,94 +651,175 @@
             var tab = document.querySelector('.tab-item[data-page="' + pageId + '"]');
             if (tab) tab.classList.add('active');
 
-            // 切到首页时刷新数据
             if (pageId === 'home') refreshHome();
             if (pageId === 'list') refreshList();
             if (pageId === 'analysis') refreshAnalysis();
+            if (pageId === 'add') resetAddForm();
         }
 
-        // Tab 点击切换
         tabItems.forEach(function(tab) {
             tab.addEventListener('click', function() {
-                var pageId = this.getAttribute('data-page');
-                switchPage(pageId);
+                switchPage(this.getAttribute('data-page'));
             });
         });
 
-        // 中间 + 按钮
         document.getElementById('tabAddBtn').addEventListener('click', function() {
             switchPage('add');
-            // 聚焦金额输入
             setTimeout(function() {
                 var ai = document.getElementById('amountInput');
                 if (ai) ai.focus();
             }, 300);
         });
 
-        // 待还入口点击
         document.getElementById('debtEntry').addEventListener('click', function() {
             switchPage('debts');
         });
 
-        // ==================== 记一笔：类型切换 ====================
-        var typeBtns = document.querySelectorAll('#page-add .type-btn');
-        typeBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                typeBtns.forEach(function(b) { b.classList.remove('active'); });
-                this.classList.add('active');
-            });
+        // ==================== 记一笔：金额实时更新按钮 ====================
+        var amountInput = document.getElementById('amountInput');
+        var saveBtn = document.getElementById('saveBtn');
+
+        amountInput.addEventListener('input', function() {
+            updateSaveButton();
         });
 
-        // ==================== 记一笔：默认日期 ====================
-        var dateInput = document.getElementById('dateInput');
-        if (dateInput) {
-            var today = new Date();
-            var y = today.getFullYear();
-            var m = String(today.getMonth() + 1).padStart(2, '0');
-            var d = String(today.getDate()).padStart(2, '0');
-            dateInput.value = y + '-' + m + '-' + d;
+        function updateSaveButton() {
+            var amt = parseFloat(amountInput.value);
+            if (amt && amt > 0) {
+                saveBtn.textContent = '记下 ¥' + amt.toFixed(2);
+            } else {
+                saveBtn.textContent = '记下';
+            }
+            validateSaveButton();
         }
 
-        // ==================== 记一笔：分类点击 ====================
-        var catBtns = document.querySelectorAll('#page-add .category-btn');
-        catBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                catBtns.forEach(function(b) { b.classList.remove('selected'); });
+        function validateSaveButton() {
+            var amt = parseFloat(amountInput.value);
+            var owner = document.querySelector('#addOwnerSelector .owner-option.selected');
+            var cat = document.querySelector('#addCategories .category-btn.selected');
+            var valid = amt && amt > 0 && owner && cat;
+            saveBtn.classList.toggle('disabled', !valid);
+        }
+
+        // ==================== 记一笔：算哪边？ ====================
+        document.querySelectorAll('#addOwnerSelector .owner-option').forEach(function(opt) {
+            opt.addEventListener('click', function() {
+                document.querySelectorAll('#addOwnerSelector .owner-option').forEach(function(o) {
+                    o.classList.remove('selected');
+                });
                 this.classList.add('selected');
+                validateSaveButton();
             });
         });
+
+        // ==================== 记一笔：花哪儿了？ ====================
+        document.querySelectorAll('#addCategories .category-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#addCategories .category-btn').forEach(function(b) {
+                    b.classList.remove('selected');
+                });
+                this.classList.add('selected');
+                validateSaveButton();
+            });
+        });
+
+        // ==================== 记一笔：日期弱化 ====================
+        var dateLabel = document.getElementById('addDateLabel');
+        var datePicker = document.getElementById('addDatePicker');
+        var dateInput = document.getElementById('dateInput');
+
+        // 默认今天
+        var today = new Date();
+        var todayStr = today.getFullYear() + '-' +
+            String(today.getMonth() + 1).padStart(2, '0') + '-' +
+            String(today.getDate()).padStart(2, '0');
+        dateInput.value = todayStr;
+
+        dateLabel.addEventListener('click', function() {
+            datePicker.style.display = (datePicker.style.display === 'none') ? 'block' : 'none';
+            if (datePicker.style.display === 'block') {
+                dateInput.focus();
+            }
+        });
+
+        dateInput.addEventListener('change', function() {
+            if (this.value) {
+                var parts = this.value.split('-');
+                var month = parseInt(parts[1]);
+                var day = parseInt(parts[2]);
+                dateLabel.textContent = month + '月' + day + '日';
+            }
+            datePicker.style.display = 'none';
+        });
+
+        // ==================== 记一笔：加句话 ====================
+        var noteLabel = document.getElementById('addNoteLabel');
+        var noteInputWrap = document.getElementById('addNoteInput');
+        var noteInput = document.getElementById('noteInput');
+
+        noteLabel.addEventListener('click', function() {
+            noteInputWrap.style.display = (noteInputWrap.style.display === 'none') ? 'block' : 'none';
+            if (noteInputWrap.style.display === 'block') {
+                noteInput.focus();
+            }
+        });
+
+        // ==================== 记一笔：重置表单 ====================
+        function resetAddForm() {
+            amountInput.value = '';
+            // 清除 owner 选择
+            document.querySelectorAll('#addOwnerSelector .owner-option').forEach(function(o) {
+                o.classList.remove('selected');
+            });
+            // 清除分类选择
+            document.querySelectorAll('#addCategories .category-btn').forEach(function(b) {
+                b.classList.remove('selected');
+            });
+            // 重置日期
+            var now = new Date();
+            dateInput.value = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0');
+            dateLabel.textContent = '今天';
+            datePicker.style.display = 'none';
+            // 重置备注
+            noteInput.value = '';
+            noteInputWrap.style.display = 'none';
+            noteLabel.textContent = '＋ 加句话';
+            // 更新按钮
+            updateSaveButton();
+        }
 
         // ==================== 记一笔：保存 ====================
         document.getElementById('saveBtn').addEventListener('click', function() {
-            var typeEl = document.querySelector('#page-add .type-btn.active');
-            var type = typeEl ? typeEl.getAttribute('data-type') : 'expense';
-            var amount = parseFloat(document.getElementById('amountInput').value);
+            if (saveBtn.classList.contains('disabled')) return;
+
+            var amount = parseFloat(amountInput.value);
             if (!amount || amount <= 0) { alert('请输入金额'); return; }
 
-            var catEl = document.querySelector('#page-add .category-btn.selected');
-            var category = catEl ? catEl.getAttribute('data-cat') : 'necessities_food';
+            var ownerEl = document.querySelector('#addOwnerSelector .owner-option.selected');
+            if (!ownerEl) { alert('请选择「算哪边？」'); return; }
+            var owner = ownerEl.getAttribute('data-owner');
 
-            var date = document.getElementById('dateInput').value || '';
-            var note = document.getElementById('noteInput').value || '';
+            var catEl = document.querySelector('#addCategories .category-btn.selected');
+            if (!catEl) { alert('请选择「花哪儿了？」'); return; }
+            var category = catEl.getAttribute('data-cat');
+
+            var date = dateInput.value || todayStr;
+            var note = noteInput.value || '';
 
             var record = {
-                type: type,
+                type: 'expense',
                 amount: amount,
+                owner: owner,
                 category: category,
+                reviewTag: null,
                 date: date,
                 note: note
             };
 
             addRecord(record).then(function() {
-                // 清空表单
-                document.getElementById('amountInput').value = '';
-                document.getElementById('noteInput').value = '';
-                // 重置日期为今天
-                var now = new Date();
-                document.getElementById('dateInput').value =
-                    now.getFullYear() + '-' +
-                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(now.getDate()).padStart(2, '0');
+                resetAddForm();
                 switchPage('home');
             }).catch(function(err) {
                 alert('保存失败: ' + err);
@@ -674,19 +828,15 @@
 
         // ==================== 首页数据刷新 ====================
         function refreshHome() {
-            // 更新月份显示
             var now = new Date();
             document.getElementById('homeMonth').textContent = now.getMonth() + 1 + '月';
 
             getHomeData().then(function(data) {
-                // 本月总支出
                 document.getElementById('homeTotalExpense').innerHTML =
                     '<span class="unit">¥</span>' + data.totalExpense.toFixed(2);
 
-                // 还能用（暂不计算）
                 document.getElementById('homeRemaining').textContent = '—';
 
-                // 四个归属
                 var ownerStats = data.ownerStats;
                 var ownerItems = document.querySelectorAll('#ownerSection .owner-item');
                 ownerItems.forEach(function(item) {
@@ -695,7 +845,6 @@
                     item.querySelector('.amount').textContent = '¥' + amt.toFixed(2);
                 });
 
-                // 如果存在未归类支出，添加未归类项
                 var unclassified = ownerStats.unclassified || 0;
                 var existingUnclassified = document.querySelector('.owner-item.unclassified');
                 if (unclassified > 0 && !existingUnclassified) {
@@ -709,12 +858,10 @@
                     existingUnclassified.remove();
                 }
 
-                // 待还
                 var debtSummary = data.debtSummary;
                 document.getElementById('debtTotal').textContent = '¥' + (debtSummary.totalRemaining || 0).toFixed(2);
                 document.getElementById('debtMonthly').textContent = '¥' + (debtSummary.monthlyDue || 0).toFixed(2);
 
-                // 最近记下
                 var recentRecords = data.recentRecords;
                 var recentList = document.getElementById('recentList');
                 if (recentRecords.length === 0) {
@@ -786,8 +933,17 @@
             });
         }
 
-        // ==================== 编辑弹窗 ====================
+        // ==================== 编辑弹窗（V0.2） ====================
         var editingId = null;
+
+        // 旧分类到新分类的映射（编辑时使用）
+        var LEGACY_CAT_MAP = {
+            '交通': 'transport',
+            '购物': 'shopping',
+            '医疗': 'health',
+            '教育': 'learning',
+            '娱乐': 'fun'
+        };
 
         function openEditModal(id) {
             editingId = id;
@@ -798,21 +954,31 @@
                 }
                 if (!record) return;
 
-                // 设置类型
-                var editTypes = document.querySelectorAll('#editTypeToggle .type-btn');
-                editTypes.forEach(function(b) {
-                    b.classList.toggle('active', b.getAttribute('data-type') === record.type);
-                });
-
                 document.getElementById('editAmount').value = record.amount;
                 document.getElementById('editDate').value = record.date || '';
                 document.getElementById('editNote').value = record.note || '';
 
+                // 设置 owner（旧数据无owner，全部不选）
+                var editOwners = document.querySelectorAll('#editOwnerSelector .owner-option');
+                editOwners.forEach(function(o) {
+                    o.classList.toggle('selected', o.getAttribute('data-owner') === record.owner);
+                });
+
                 // 设置分类
                 var editCats = document.querySelectorAll('#editCategories .category-btn');
+                var targetCat = record.category;
+                // 如果旧分类可以映射到新分类，在编辑时显示对应项
+                if (LEGACY_CAT_MAP[targetCat]) {
+                    targetCat = LEGACY_CAT_MAP[targetCat];
+                }
+                // 如果已经是新分类 ID，直接匹配
                 editCats.forEach(function(b) {
-                    b.classList.toggle('selected', b.getAttribute('data-cat') === record.category);
+                    b.classList.toggle('selected', b.getAttribute('data-cat') === targetCat);
                 });
+
+                // 删除旧类型切换按钮（如果存在）
+                var editTypeToggle = document.getElementById('editTypeToggle');
+                if (editTypeToggle) editTypeToggle.style.display = 'none';
 
                 document.getElementById('editModal').classList.add('active');
                 document.getElementById('editOverlay').classList.add('active');
@@ -827,19 +993,40 @@
 
         document.getElementById('editOverlay').addEventListener('click', closeEditModal);
 
+        // 编辑弹窗：owner 选择
+        document.querySelectorAll('#editOwnerSelector .owner-option').forEach(function(opt) {
+            opt.addEventListener('click', function() {
+                document.querySelectorAll('#editOwnerSelector .owner-option').forEach(function(o) {
+                    o.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        // 编辑弹窗：分类选择
+        document.querySelectorAll('#editCategories .category-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#editCategories .category-btn').forEach(function(b) {
+                    b.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
         document.getElementById('editSaveBtn').addEventListener('click', function() {
             if (!editingId) return;
-            var typeEl = document.querySelector('#editTypeToggle .type-btn.active');
-            var type = typeEl ? typeEl.getAttribute('data-type') : 'expense';
             var amount = parseFloat(document.getElementById('editAmount').value);
             if (!amount || amount <= 0) { alert('请输入金额'); return; }
 
+            var ownerEl = document.querySelector('#editOwnerSelector .owner-option.selected');
+            var owner = ownerEl ? ownerEl.getAttribute('data-owner') : null;
+
             var catEl = document.querySelector('#editCategories .category-btn.selected');
-            var category = catEl ? catEl.getAttribute('data-cat') : 'necessities_food';
+            var category = catEl ? catEl.getAttribute('data-cat') : null;
+
             var date = document.getElementById('editDate').value || '';
             var note = document.getElementById('editNote').value || '';
 
-            // 先获取原记录保持 owner 等字段完整
             getAllRecords().then(function(records) {
                 var original = null;
                 for (var i = 0; i < records.length; i++) {
@@ -847,9 +1034,9 @@
                 }
                 if (!original) return;
 
-                original.type = type;
                 original.amount = amount;
-                original.category = category;
+                if (owner) original.owner = owner;
+                if (category) original.category = category;
                 original.date = date;
                 original.note = note;
 
@@ -929,7 +1116,6 @@
                     container.innerHTML = '<div style="text-align:center;padding:40px;color:#c7c7cc;font-size:13px;">暂无数据</div>';
                     return;
                 }
-                // 按金额排序
                 keys.sort(function(a, b) { return (stats[b] || 0) - (stats[a] || 0); });
                 var html = '';
                 keys.forEach(function(cat) {
